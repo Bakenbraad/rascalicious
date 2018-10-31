@@ -1,0 +1,3 @@
+module testseries
+
+void fa(){}
