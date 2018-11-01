@@ -1,7 +1,10 @@
 module m3testing
 import List;
+import IO;
 import lang::java::jdt::m3::Core;
 import lang::java::m3::Core;
+import lang::java::jdt::m3::AST;
+import lang::java::m3::AST;
 
 // The model created from the eclipse project.
 public M3 myModel = createM3FromEclipseProject(|project://test_project|);
@@ -41,3 +44,17 @@ public map[loc class, real fieldCount] classToMethodRatio() {
 	return (cl : (fieldlist[cl] * 1.0) / (methodlist[cl] * 1.0) | cl <- classes(myModel));
 }
 
+// Lets work with methods:
+public set[loc] myMethods = methods(myModel);
+
+// Retrieve a method from file.
+public str methodSrc() {
+	str string = readFile(|java+method:///test_project/Cars/HelloWorld/count(java.lang.String)|);
+	return string;
+}	
+
+public int countWords(str text) {
+	return (0 | it + 1 | /\W+/ := text);
+}
+
+public set[Declaration] fileAST = createAstsFromDirectory(|home:///test_project|, true, errorRecovery=false, javaVersion="1.8");
