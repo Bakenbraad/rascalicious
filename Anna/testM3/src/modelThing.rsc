@@ -1,12 +1,15 @@
 module modelThing
 import lang::java::m3::Core;
 import lang::java::jdt::m3::Core;
+import lang::java::jdt::m3::Core;
 import lang::java::jdt::m3::AST;
 import IO;
 import List;
+import demo::common::Crawl;
 
 
-public M3 model1 = createM3FromEclipseProject(|project://test_project|);
+public loc carProjectLocation = |project://test_project|;
+public M3 model1 = createM3FromEclipseProject(carProjectLocation);
 public set[loc] methods1 = methods(model1);
 
 // number of methrods(functions) in a class
@@ -44,3 +47,29 @@ public str wordsInMethod(str methodfromFile){
 	return(mess);
 }
 
+// list with all the java files in the carProjectLocation
+public list[loc] carProject() {
+	return crawl(carProjectLocation, ".java");
+}
+
+// function that prints the lines of codes in the cars.java file
+public void showLines(){
+	int projectVolumeValues = countLines(carProject());
+	println("car lines: <projectVolumeValues>");
+}
+
+public int countLines(list[loc] listWithJavaFles) {
+
+	map[str,int] values = ();
+	
+	values["lines"] = 0;
+	
+	for (i <- listWithJavaFles) {
+	
+		for (line <- readFileLines(i)) {
+		
+			values["lines"] += 1;
+		}
+	}
+	return values["lines"];
+}
