@@ -48,28 +48,28 @@ public str wordsInMethod(str methodfromFile){
 }
 
 // list with all the java files in the carProjectLocation
-public list[loc] carProject() {
-	return crawl(carProjectLocation, ".java");
-}
+// public list[loc] carProject() {
+//	return crawl(carProjectLocation, ".java");
+//}
+
+// cars.java location
+public loc carProject = |project://test_project//src//test_project/Cars.java|;
 
 // function that prints the lines of codes in the cars.java file
 public void showLines(){
-	int projectVolumeValues = countLines(carProject());
-	println("car lines: <projectVolumeValues>");
+	int projectVolumeValues = countLines(carProject);
+	println("Lines of code in Cars.java: <projectVolumeValues>");
 }
 
-public int countLines(list[loc] listWithJavaFles) {
+public int countLines(loc carProjectLoc) {
 
 	map[str,int] values = ();
 	
 	values["lines"] = 0;
 	
-	for (i <- listWithJavaFles) {
-	
-		for (line <- readFileLines(i)) {
+		for (line <- readFileLines(carProjectLoc)) {
 		
 			values["lines"] += 1;
-		}
-	}
+		 }
 	return values["lines"];
 }
