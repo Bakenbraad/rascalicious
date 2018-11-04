@@ -5,6 +5,7 @@ import lang::java::jdt::m3::Core;
 import lang::java::jdt::m3::AST;
 import IO;
 import List;
+import String;
 import demo::common::Crawl;
 
 
@@ -57,19 +58,29 @@ public loc carProject = |project://test_project//src//test_project/Cars.java|;
 
 // function that prints the lines of codes in the cars.java file
 public void showLines(){
-	int projectVolumeValues = countLines(carProject);
-	println("Lines of code in Cars.java: <projectVolumeValues>");
+	map[str,int] projectVolumeValues = countLines(carProject);
+	println("Lines of code in Cars.java: <projectVolumeValues["lines"]>\nLines of comments: <projectVolumeValues["comments"]>\nEmpty Lines: <projectVolumeValues["emptylines"]>");
 }
 
-public int countLines(loc carProjectLoc) {
+public map[str,int] countLines(loc carProjectLoc) {
 
 	map[str,int] values = ();
 	
-	values["lines"] = 0;
+	values["lines"] 	= 0;
+	values["comments"]	= 0;
+	values["emptylines"]= 0;
 	
 		for (line <- readFileLines(carProjectLoc)) {
 		
 			values["lines"] += 1;
+			
+			//TODO: need more conditions for comments
+			if(startsWith(line,"//") || contains(line,"//")){
+				values["comments"] += 1;
+			}
+			else if(trim(line) == ""){
+				values["emptylines"]+=1;
+			}
 		 }
-	return values["lines"];
+	return values;
 }
