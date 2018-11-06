@@ -41,10 +41,18 @@ public class Cars {
         	}
         	
         	// TEST MOOI
+        	/* blabla
+        	  blabla
+        	 */
         	
         	System.out.println(counter);
         }  
         
+    	/*
+    	 lala
+    	 lala
+    	 lala
+    	 */
     	public int minFunction(int n1, int n2) {
     	   int min;
     	   if (n1 > n2)

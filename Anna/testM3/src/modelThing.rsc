@@ -59,28 +59,39 @@ public loc carProject = |project://test_project//src//test_project/Cars.java|;
 // function that prints the lines of codes in the cars.java file
 public void showLines(){
 	map[str,int] projectVolumeValues = countLines(carProject);
-	println("Lines of code in Cars.java: <projectVolumeValues["lines"]>\nLines of comments: <projectVolumeValues["comments"]>\nEmpty Lines: <projectVolumeValues["emptylines"]>");
+	int codeLines = projectVolumeValues["lines"]-(projectVolumeValues["comments"] + projectVolumeValues["emptylines"]);
+	println("Lines in Cars.java: <projectVolumeValues["lines"]>\nLines of pure code: <codeLines>\nLines of comments: <projectVolumeValues["comments"]>\nEmpty Lines: <projectVolumeValues["emptylines"]>");
 }
 
 public map[str,int] countLines(loc carProjectLoc) {
 
-	map[str,int] values = ();
+	map[str,int] results = ();
 	
-	values["lines"] 	= 0;
-	values["comments"]	= 0;
-	values["emptylines"]= 0;
+	results["lines"] 		= 0;
+	results["comments"]		= 0;
+	results["emptylines"]	= 0;
+	int linesOfCom 			= 0;			
 	
 		for (line <- readFileLines(carProjectLoc)) {
 		
-			values["lines"] += 1;
+			results["lines"] += 1;
 			
-			//TODO: need more conditions for comments
-			if(startsWith(line,"//") || contains(line,"//")){
-				values["comments"] += 1;
+			// checks for one line comments
+			if(startsWith(line,"//") || contains(line,"//") || (startsWith(trim(line),"/*") && endsWith(trim(line),"*/"))){
+				results["comments"] += 1;
 			}
+			// checks for comments of more than one line
+			else if (startsWith(trim(line),"/*") || linesOfCom>0){
+				linesOfCom += 1;
+				if (endsWith(trim(line),"*/")){
+					results["comments"] += linesOfCom;
+					linesOfCom = 0;
+				}
+			}
+			// checks for empty lines
 			else if(trim(line) == ""){
-				values["emptylines"]+=1;
+				results["emptylines"]+=1;
 			}
 		 }
-	return values;
+	return results;
 }
