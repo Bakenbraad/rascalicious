@@ -24,7 +24,6 @@ public void squares(int N){
 // a solution with a multi line string template:
 public str squaresTemplate(int N) = "Table of squares from 1 to <N><for (int I <- [1 .. N + 1]) {>  <I> squared = <I * I><}>";
 
-str bottles(0)     = "no more bottles"; 
 str bottles(1)     = "1 bottle";
 default str bottles(int n) = "<n> bottles"; 
 

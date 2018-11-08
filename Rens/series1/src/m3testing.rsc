@@ -8,6 +8,7 @@ import lang::java::m3::AST;
 
 // The model created from the eclipse project.
 public M3 myModel = createM3FromEclipseProject(|project://test_project|);
+public list[loc] projectMethods = [ e | e <- myModel.containment[|java+class:///test_project/Cars|], e.scheme == "java+method"];
 
 // Counts the methods in the model (Functions inside of a class)
 public int methodCount () {
@@ -17,6 +18,7 @@ public int methodCount () {
 
 // Counts the amount of fields/methods in a given class (cl).
 int numberOfMethods(loc cl, M3 model) = size([ m | m <- model.containment[cl], isMethod(m)]);
+list[loc] allClassMethods(loc cl, M3 model) = [ m | m <- model.containment[cl], isMethod(m)];
 int numberOfFields(loc cl, M3 model) = size([ m | m <- model.containment[cl], isField(m)]);
 
 // Gives a map of all classes with their amount of methods.
@@ -57,4 +59,26 @@ public int countWords(str text) {
 	return (0 | it + 1 | /\W+/ := text);
 }
 
-public set[Declaration] fileAST = createAstsFromDirectory(|home:///test_project|, true, errorRecovery=false, javaVersion="1.8");
+//public set[Declaration] fileAST = createAstsFromDirectory(|cwd://test_project/|, true, errorRecovery=false, javaVersion="1.8");
+
+
+
+int calcCC(Statement impl) {
+    int result = 1;
+    visit (impl) {
+        case \if(_,_) : result += 1;
+        case \if(_,_,_) : result += 1;
+        case \case(_) : result += 1;
+        case \do(_,_) : result += 1;
+        case \while(_,_) : result += 1;
+        case \for(_,_,_) : result += 1;
+        case \for(_,_,_,_) : result += 1;
+        case foreach(_,_,_) : result += 1;
+        case \catch(_,_): result += 1;
+        case \conditional(_,_,_): result += 1;
+        case infix(_,"&&",_) : result += 1;
+        case infix(_,"||",_) : result += 1;
+    }
+    return result;
+}
+
