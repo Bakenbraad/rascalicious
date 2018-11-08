@@ -9,6 +9,8 @@ import List;
 import String;
 import demo::common::Crawl;
 
+public loc carProject = |project://test_project//src//test_project/Cars.java|;
+
 public map[str,int] countProjectLines(list[loc] allLocations){
 	map[str,int] values = ();
 	values["lines"] 		= 0;

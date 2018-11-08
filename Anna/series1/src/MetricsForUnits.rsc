@@ -15,7 +15,7 @@ public loc projectloc 	= |project://test_project|;
 public M3 myModel 		= createM3FromEclipseProject(projectloc);
 public set[Declaration] decls 		= createAstsFromEclipseProject(projectloc, true);
 public map[str,int] totalFileLines 	= countLines(carProject);
-public int totalPureLines = totalFileLines["lines"] - (totalFileLines["comments"] + totalFileLines["emptylines"]);
+
 
 // Gets all methods as statements from the project.
 public list[Statement] allMethods(){
@@ -28,6 +28,21 @@ public list[Statement] allMethods(){
 	}
 	return results; 
 }
+
+public int allUnitLines(){
+	allStatements = allMethods();
+	int allPureLines = 0;
+	
+	for (statement <- allStatements){
+		methodLines = countLines(statement.src);
+		pureLines = methodLines["lines"] - (methodLines["comments"] + methodLines["emptylines"]);
+		allPureLines += pureLines;
+	}
+	return allPureLines;
+	
+}
+
+public int totalPureLines = allUnitLines();
 
 // calculates the lines of pure code per unit(method)
 public void calcUnitSize() {
