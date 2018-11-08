@@ -1,5 +1,6 @@
 package test_project;
 
+import test_project.Cars.HelloWorld;
 
 public class Cars {
 

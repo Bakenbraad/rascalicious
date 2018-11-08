@@ -9,27 +9,18 @@ import List;
 import String;
 import demo::common::Crawl;
 
-public loc carProject = |project://test_project//src//test_project/Cars.java|;
-
-public void showLines(){
-	map[str,int] projectVolumeValues = countLines(carProject);
-	str rank = "";
-	int codeLines = projectVolumeValues["lines"]-(projectVolumeValues["comments"] + projectVolumeValues["emptylines"]);
-	if(codeLines<=66000){
-		rank = "++";
+public map[str,int] countProjectLines(list[loc] allLocations){
+	map[str,int] values = ();
+	values["lines"] 		= 0;
+	values["comments"]		= 0;
+	values["emptylines"]	= 0;
+	for(location <- allLocations){
+		linesPerlocation = countLines(location);
+		values["lines"]+= linesPerlocation["lines"];
+		values["comments"]+= linesPerlocation["comments"];
+		values["emptylines"]+= linesPerlocation["emptylines"];
 	}
-	else if(codeLines<=246000){
-		rank = "+";
-	}
-	else if(codeLines<=665000){
-		rank = "o";
-	}
-	else if(codeLines<=1310000){
-		rank = "-";
-	}
-	else rank = "--";
-	println("Lines in Cars.java: <projectVolumeValues["lines"]>\nLines of pure code: <codeLines>\nLines of comments: <projectVolumeValues["comments"]>\nEmpty Lines: <projectVolumeValues["emptylines"]>");
-	println("\nRank: <rank>");
+	return values;
 }
 
 public map[str,int] countLines(loc carProjectLoc) {
@@ -40,6 +31,7 @@ public map[str,int] countLines(loc carProjectLoc) {
 	results["comments"]		= 0;
 	results["emptylines"]	= 0;
 	int linesOfCom 			= 0;			
+	
 	
 		for (line <- readFileLines(carProjectLoc)) {
 		
@@ -62,5 +54,6 @@ public map[str,int] countLines(loc carProjectLoc) {
 				results["emptylines"]+=1;
 			}
 		 }
+		
 	return results;
 }

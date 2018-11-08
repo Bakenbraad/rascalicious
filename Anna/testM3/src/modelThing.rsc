@@ -10,13 +10,33 @@ import demo::common::Crawl;
 
 
 public loc carProjectLocation = |project://test_project|;
+set[Declaration] decls = createAstsFromEclipseProject(carProjectLocation, true);
 public M3 model1 = createM3FromEclipseProject(carProjectLocation);
 public set[loc] methods1 = methods(model1);
 
-// number of methrods(functions) in a class
+int calcCC(Statement impl) {
+    int result = 1;
+    visit (impl) {
+        case \if(_,_) : result += 1;
+        case \if(_,_,_) : result += 1;
+        case \case(_) : result += 1;
+        case \do(_,_) : result += 1;
+        case \while(_,_) : result += 1;
+        case \for(_,_,_) : result += 1;
+        case \for(_,_,_,_) : result += 1;
+        case foreach(_,_,_) : result += 1;
+        case \catch(_,_): result += 1;
+        case \conditional(_,_,_): result += 1;
+        case infix(_,"&&",_) : result += 1;
+        case infix(_,"||",_) : result += 1;
+    }
+    return result;
+}
+
+// number of methods(functions) in a class
 public int numberOfMethods(loc cl, M3 model) = size([ m | m <- model.containment[cl], isMethod(m)]);
 
-// number of methrods(functions) per class
+// number of methods(functions) per class
 public map[loc class, int methodCount] numberOfMethodsPerClass() {
 	return (cl:numberOfMethods(cl, model1) | <cl,_> <- model1.containment, isClass(cl));
 }
@@ -111,7 +131,7 @@ public map[str,int] countLines(loc carProjectLoc) {
 	return results;
 }
 
-public set[list[str]] allSixLines(loc carProjectLoc){
+/* public set[list[str]] allSixLines(loc carProjectLoc){
 	list[str] sixLines = [];
 	int i 		= 0;
 	// int curLine = 1;
@@ -156,4 +176,4 @@ public void showSix(){
 		println("<dups>\n\n");
 	//}
 	// println("<dup>");
-}
+}*/
