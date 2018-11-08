@@ -8,6 +8,7 @@ public class Cars {
     public String color = null;
     
 
+   
     public Cars() {
     	HelloWorld h = new HelloWorld();
     	h.count("thest");
@@ -52,6 +53,8 @@ public class Cars {
     	 lala
     	 lala
     	 lala
+    	 lala
+    	 lala
     	 */
     	public int minFunction(int n1, int n2) {
     	   int min;
@@ -63,5 +66,12 @@ public class Cars {
     	   return min; 
     	}
     }
+	    /*
+		 lala
+		 lala
+		 lala
+		 lala
+		 lala
+		 */
 
 }

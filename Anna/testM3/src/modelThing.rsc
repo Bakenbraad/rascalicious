@@ -59,8 +59,23 @@ public loc carProject = |project://test_project//src//test_project/Cars.java|;
 // function that prints the lines of codes in the cars.java file
 public void showLines(){
 	map[str,int] projectVolumeValues = countLines(carProject);
+	str rank = "";
 	int codeLines = projectVolumeValues["lines"]-(projectVolumeValues["comments"] + projectVolumeValues["emptylines"]);
+	if(codeLines<=66000){
+		rank = "++";
+	}
+	else if(codeLines<=246000){
+		rank = "+";
+	}
+	else if(codeLines<=665000){
+		rank = "o";
+	}
+	else if(codeLines<=1310000){
+		rank = "-";
+	}
+	else rank = "--";
 	println("Lines in Cars.java: <projectVolumeValues["lines"]>\nLines of pure code: <codeLines>\nLines of comments: <projectVolumeValues["comments"]>\nEmpty Lines: <projectVolumeValues["emptylines"]>");
+	println("\nRank: <rank>");
 }
 
 public map[str,int] countLines(loc carProjectLoc) {
@@ -77,7 +92,7 @@ public map[str,int] countLines(loc carProjectLoc) {
 			results["lines"] += 1;
 			
 			// checks for one line comments
-			if(startsWith(line,"//") || contains(line,"//") || (startsWith(trim(line),"/*") && endsWith(trim(line),"*/"))){
+			if(startsWith(trim(line),"//") || contains(line,"//") || (startsWith(trim(line),"/*") && endsWith(trim(line),"*/"))){
 				results["comments"] += 1;
 			}
 			// checks for comments of more than one line
@@ -94,4 +109,51 @@ public map[str,int] countLines(loc carProjectLoc) {
 			}
 		 }
 	return results;
+}
+
+public set[list[str]] allSixLines(loc carProjectLoc){
+	list[str] sixLines = [];
+	int i 		= 0;
+	// int curLine = 1;
+	bool firstTime = true;
+	blocks		= {};
+	for (line <- readFileLines(carProjectLoc)) {
+		// curLine +=1;
+		if(i<6){
+			if(trim(line)!=""){
+				sixLines += line;
+				i+=1;
+			}
+		}
+		else{
+			if (firstTime){
+				blocks += sixLines;
+				firstTime = false;
+			}
+			else{
+				sixLines = drop(1, sixLines);
+				sixLines += line;
+				blocks += sixLines;
+			}
+			
+		}
+	}
+	return blocks;
+}
+
+public void showSix(){
+	// int dup	= 0;
+	int a = 0;
+	blocks1 = allSixLines(carProject);
+	// for(i<- blocks1){
+		// for (j <- [size(blocks1)..i]){
+			// if(blocks1[i]==blocks1[j]){ 
+				//dup +=1;
+			//}
+		// }
+		dups = [ y | y <-blocks1, size(blocks1[y])>1];
+		a += 1;
+		println("<dups>\n\n");
+	//}
+	// println("<dup>");
 }
