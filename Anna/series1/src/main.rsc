@@ -12,14 +12,15 @@ import List;
 import String;
 import demo::common::Crawl;
 
-public loc carProject = |project://test_project//src//test_project/Cars.java|;
-public loc testProjectLocation = |project://test_project|;
+//public loc carProject = |project://test_project//src//test_project/Cars.java|;
+// public loc testProjectLocation = |project://smallsql0.21_src|;
 
 public void main(){
 	println("Printing results\n\nVolume metric:");
 	showLines();
 	println("\nLines of code per unit:");
 	calcUnitSize();
+	println("Complexity Rank: <calcRelativeRisk()>");
 	
 }
 
@@ -40,10 +41,10 @@ public void showLines(){
 		rank = "-";
 	}
 	else rank = "--";
-	println("Lines in Cars.java: <projectVolumeValues["lines"]>\nLines of pure code: <codeLines>\nLines of comments: <projectVolumeValues["comments"]>\nEmpty Lines: <projectVolumeValues["emptylines"]>");
+	println("Lines in total: <projectVolumeValues["lines"]>\nLines of pure code: <codeLines>\nLines of comments: <projectVolumeValues["comments"]>\nEmpty Lines: <projectVolumeValues["emptylines"]>");
 	println("Rank: <rank>");
 }
 
 public list[loc] findJavaFiles() {
-	return crawl(testProjectLocation, ".java");
+	return crawl(projectloc, ".java");
 }

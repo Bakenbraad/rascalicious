@@ -9,7 +9,8 @@ import List;
 import String;
 import demo::common::Crawl;
 
-public loc carProject = |project://test_project//src//test_project/Cars.java|;
+// public loc carProject = |project://test_project//src//test_project/Cars.java|;
+public loc projectloc 	= |project://smallsql0.21_src|;
 
 public map[str,int] countProjectLines(list[loc] allLocations){
 	map[str,int] values = ();
@@ -25,7 +26,7 @@ public map[str,int] countProjectLines(list[loc] allLocations){
 	return values;
 }
 
-public map[str,int] countLines(loc carProjectLoc) {
+public map[str,int] countLines(loc curProjectLoc) {
 
 	map[str,int] results = ();
 	
@@ -35,7 +36,7 @@ public map[str,int] countLines(loc carProjectLoc) {
 	int linesOfCom 			= 0;			
 	
 	
-		for (line <- readFileLines(carProjectLoc)) {
+		for (line <- readFileLines(curProjectLoc)) {
 		
 			results["lines"] += 1;
 			

@@ -11,10 +11,9 @@ import String;
 import VolumeMetric;
 import demo::common::Crawl;
 
-public loc projectloc 	= |project://test_project|;
 public M3 myModel 		= createM3FromEclipseProject(projectloc);
 public set[Declaration] decls 		= createAstsFromEclipseProject(projectloc, true);
-public map[str,int] totalFileLines 	= countLines(carProject);
+// public map[str,int] totalFileLines 	= countLines(carProject);
 
 
 // Gets all methods as statements from the project.
