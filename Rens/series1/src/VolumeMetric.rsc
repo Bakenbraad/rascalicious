@@ -42,6 +42,7 @@ public map[str,int] countLines(loc carProjectLoc) {
 	int linesOfCom 			= 0;			
 	
 		for (line <- readFileLines(carProjectLoc)) {
+			println(line);
 		
 			results["lines"] += 1;
 			

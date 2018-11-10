@@ -5,112 +5,133 @@ import lang::java::jdt::m3::Core;
 import lang::java::jdt::m3::Core;
 import lang::java::jdt::m3::AST;
 import util::Math;
+import demo::common::Crawl;
 import IO;
 import List;
 import Map;
 import String;
 
-public loc carProject = |project://test_project//src//test_project/Cars.java|;
+// Temporarily used from VolumeMetric.
+public loc projectloc = |project://smallsql0.21_src/|;
 
-public map[int, str] getAggregatedLines(){
+public list[loc] findJavaFiles() {
+	return crawl(projectloc, ".java");
+}
 
+public map[int, tuple[loc, str]] linesToLocMap(loc location){
+	
 	int linesOfCom = 0;
-	int lineCount = 0;
+	int linesCount = 0;
+	int totalLength = 0;
 	whiteSpaces = (" " : "", "\t" : "", "\n" : "");
 	
 	// Return the list of modified strings (no comments and no whitespace) in combination to their original start line.
 	results = ();
 	
-	for (line <- readFileLines(carProject)) {
-	
-		lineCount += 1;
-		
+	for (line <- readFileLines(location)) {
+		linesCount += 1;
+			
 		// Check if a line is a comment (Should not affect code duplication).
 		if(startsWith(trim(line), "//") || (startsWith(trim(line),"/*") && endsWith(trim(line),"*/"))) {
-			// We have  a comment line, skip it!
-			results += (lineCount : "");				
+			// We have  a comment line, dont add the string!
+			results += (linesCount : <location(totalLength, size(line)), "">);				
 		} else if (startsWith(trim(line),"/*") || linesOfCom > 0) {
-			// Skip multiline code.
+			// Skip multiline code strings.
 			linesOfCom += 1;
 			if (endsWith(trim(line),"*/")){
 				linesOfCom = 0;
 			}
+			results += (linesCount : <location(totalLength, size(line)), "">);
 		} else if (contains(line, "//")) {
 			// We have a line of code with a comment, cut off the comment.
 			lineSplit = split("//", trim(line));
 			modifiedLine = escape(lineSplit[1], whiteSpaces);
-			results += (lineCount : modifiedLine);
+			results += (linesCount : <location(totalLength, size(line)), modifiedLine>);
 		} else {
 			// Remove all whitespace and add the string to the list of modified strings.
 			modifiedLine = escape(line, whiteSpaces);
-			results += (lineCount : modifiedLine);
+			results += (linesCount : <location(totalLength, size(line)), modifiedLine>);
 		}
+		// Add the line length plus 2 (for the /n unicode chars left out by the read function).
+		totalLength += (size(line) + 2);
 		
 	} 
 	return results;
 }
 
-public map[tuple[int,int],str] getBlocks() {
+public map[str, list[loc]] generateAggregates(loc location, map[str, list[loc]] results) {
 
-	cleanLines = getAggregatedLines();
-	cleanLinesCount = size(cleanLines);
+	locMap = linesToLocMap(location);
+	locMapSize = size(locMap);
 	
-	// Results should be the block and the first and last line in which the block occurs.
-	map[tuple[int,int],str] results = ();
-	
-	for (int i <- [1..cleanLinesCount - 5]) {
+	for (int i <- [1..locMapSize - 5]) {
 				
 		int j = 0;
 		int blocksize = 0;
 		str block = "";
 		
+		// Get the <loc, string> tuple form the line.
+		locAndString = locMap[i];
+		lineLoc = locAndString[0];
+		lineStr = locAndString[1];
+		
+		// Initiate the start and end of the block.
+		startOfBlock = lineLoc.offset;
+		endOfBlock = 0;
+		
 		// Add lines of code to the blocks untill it is 6 long or the end is reached.
-		while (blocksize < 6 && cleanLinesCount > (i + j) && cleanLines[i] != "") {
-			if (cleanLines[i + j] != "") {
-				block += cleanLines[i + j];
+		while (blocksize < 6 && locMapSize > (i + j) && lineStr != "") {
+		
+			// Retrieve the next line.
+			nextLine = locMap[i + j];
+			
+			// If the next line is not empty (actual code), add it to the block.
+			if (nextLine[1] != "") {
+				block += nextLine[1];
 				blocksize += 1;
 			}
+			
+			// Increase the offset of the block and add 2 for /n.
+			endOfBlock += (nextLine[0].length + 2);
+			
+			// Move to the next line.
 			j += 1;
 		}
+		
+		// If the block is complete, save it in the results map and move to the next one.
 		if (blocksize == 6) {
-			results[<i,i + j>] = block;
+			if (block in results) {
+				results[block] += (location(startOfBlock, endOfBlock));
+			}
+			else {
+				results[block] = [(location(startOfBlock, endOfBlock))];
+			}
 		}
 	}
 	return results;
 }
 
-public void blocksToHashMap() {
+public void main() {
 
-	map[str,list[tuple[int,int]]] duplications = ();
-	blocks = getBlocks();
+	// Results should be the block as a string and the locations in which the block occurs.
+	map[str, list[loc]] results = ();
 	
-	// Map all blockstrings to their occurrences in text, mulitple occurrences have multiple start-end line tuples.
-	for (b <- blocks) {
-		blockstring = blocks[b];
-		if(blockstring in duplications) {
-			println(b);
-			duplications[blockstring] += b;
-		} else {
-			duplications[blockstring] = [b];
-		}
+	javaFiles = findJavaFiles();
+	for (l <- javaFiles) {
+		// For each file add the locations to the results map (block as string mapped to list of location of occurrance).
+		results = generateAggregates(l, results);
 	}
 	
-	// Print all duplications that are duplications.
-	fileLines = readFileLines(carProject);
-	for (d <- duplications) {
-		if (size(duplications[d]) > 1){
-			original = min(duplications[d]);
-			originalLines = [original[0]..original[1]];
-			duplicat = duplications[d] - original;
-			println("The code in lines <originalLines>:");
+	// Print the duplications found in all the files.
+	for (occurrance <- results) {
+		if (size(results[occurrance]) > 1){
+			println("Duplicate occurrances of code in:");
 			
-			for (i <- originalLines) {
-				println(fileLines[i - 1]);
-			}
-			println("is is duplicated in lines:");
-			for (dup <- duplicat) {
-				println("Lines: <[dup[0]..dup[1]]>");
+			// Print all locations in which the code occurs.
+			duplicates = results[occurrance];
+			for (dup <- duplicates) {
+				println("<dup>");
 			}
 		}
-	}	
+	}
 }

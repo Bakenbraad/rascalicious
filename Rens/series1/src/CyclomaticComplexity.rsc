@@ -117,8 +117,6 @@ public str calcRelativeRisk() {
 	}
 	else return "--";
 	
-	
-	
 }
 
 // Calculates the accumulated CC for a statement (method).

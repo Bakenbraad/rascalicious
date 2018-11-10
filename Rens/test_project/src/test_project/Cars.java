@@ -11,6 +11,11 @@ public class Cars {
     public Cars() {
     	HelloWorld h = new HelloWorld();
     	h.count("thest");
+    	time += System.currentTimeMillis();
+        System.out.println( "  Test time: " + time + " ms");
+        st.execute("drop procedure sp_"+tableName);
+        st.close();
+        pr.close();
     }
     
     public void main() {
@@ -38,6 +43,11 @@ public class Cars {
         	for(int i = 0; i < size; i++)
         	{
         		counter ++;
+        		time += System.currentTimeMillis();
+                System.out.println( "  Test time: " + time + " ms");
+                st.execute("drop procedure sp_"+tableName);
+                st.close();
+                pr.close();
         	}
         	
         	// TEST MOOI
