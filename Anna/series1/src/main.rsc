@@ -18,16 +18,14 @@ import demo::common::Crawl;
 public void main(){
 	println("Printing results\n\nVolume metric:");
 	showLines();
-	println("\nLines of code per unit:");
-	calcUnitSize();
-	println("Complexity Rank: <calcRelativeRisk()>");
+	printUnitResults();
 	
 }
 
 public void showLines(){
 	map[str,int] projectVolumeValues = countProjectLines(findJavaFiles());
 	str rank = "";
-	int codeLines = projectVolumeValues["lines"]-(projectVolumeValues["comments"] + projectVolumeValues["emptylines"]);
+	int codeLines = projectVolumeValues["lines"]-(projectVolumeValues["comments"] + projectVolumeValues["emptylines"]+projectVolumeValues["brackets"]);
 	if(codeLines<=66000){
 		rank = "++";
 	}
@@ -41,7 +39,7 @@ public void showLines(){
 		rank = "-";
 	}
 	else rank = "--";
-	println("Lines in total: <projectVolumeValues["lines"]>\nLines of pure code: <codeLines>\nLines of comments: <projectVolumeValues["comments"]>\nEmpty Lines: <projectVolumeValues["emptylines"]>");
+	println("Lines in total: <projectVolumeValues["lines"]>\nLines of pure code: <codeLines>\nLines of comments: <projectVolumeValues["comments"]>\nEmpty Lines: <projectVolumeValues["emptylines"]>\nBrackets: <projectVolumeValues["brackets"]>");
 	println("Rank: <rank>");
 }
 
