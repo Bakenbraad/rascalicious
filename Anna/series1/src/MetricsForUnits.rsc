@@ -34,7 +34,7 @@ public int allUnitLines(){
 	
 	for (statement <- allStatements){
 		methodLines = countLines(statement.src);
-		pureLines = methodLines["lines"] - (methodLines["comments"] + methodLines["emptylines"]);
+		pureLines = methodLines["lines"] - (methodLines["comments"] + methodLines["emptylines"]+methodLines["brackets"]);
 		allPureLines += pureLines;
 	}
 	return allPureLines;
@@ -44,43 +44,63 @@ public int allUnitLines(){
 public int totalPureLines = allUnitLines();
 
 // calculates the lines of pure code per unit(method)
-public void calcUnitSize() {
+public list[tuple[int,loc]] calcUnitSize(){
 	allStatements = allMethods();
-	
+	list[tuple[int,loc]] unitSize = [];
 	for (statement <- allStatements){
 		methodLines = countLines(statement.src);
-		pureLines = methodLines["lines"] - (methodLines["comments"] + methodLines["emptylines"]);
-		println("<pureLines> in method at: <statement.src>");
+		pureLines = methodLines["lines"] - (methodLines["comments"] + methodLines["emptylines"]+ methodLines["brackets"]);
+		sizeLoc = <pureLines,statement.src>;
+		unitSize += sizeLoc;
 	}
-
+	return unitSize;
 }
 
+public rel[str, loc] calculateRisk(int n, rel[str,loc] strLoc,loc stateLoc,list[int] values){
+	if(n <= 10) {
+		strLoc += <"l", stateLoc>;
+	} else if (n <= 20) {
+		strLoc += <"m", stateLoc>;
+	} else if (n <= 50) {
+		strLoc += <"h", stateLoc>;
+	} else {
+		strLoc += <"vh", stateLoc>;
+	}
+	return strLoc;
+}
+
+public rel[str,loc] riskPerUnitSize(){
+	unitSize = calcUnitSize();
+	rel[str, loc] results = {};
+	list[int] values = [15,30,60];
+	for (units <- unitSize){
+		linesUnit 	= units[0];
+		locationUnit= units[1]; 
+		results = calculateRisk(linesUnit,results,locationUnit,values);
+	}
+	return results;
+}
+
+
 // Generate the CC for each of the methods and return a map of all methods (units) and their CC
-public rel[str, loc] getCCforMethods() {
+public rel[str, loc] riskPerUnitCC() {
 
 	allStatements = allMethods();
 	int cc = 0;
 	rel[str, loc] results = {};
+	list[int] values = [10,20,50];
 	
 	for (statement <- allStatements){
 		cc = calcCC(statement);
-		if(cc <= 10) {
-			results += <"l", statement.src>;
-		} else if (cc <= 20) {
-			results += <"m", statement.src>;
-		} else if (cc <= 50) {
-			results += <"h", statement.src>;
-		} else {
-			results += <"vh", statement.src>;
-		}
+		loc stateLoc = statement.src;
+		results = calculateRisk(cc,results,stateLoc,values);
 	}	
 	
 	return results;	
 }
 
-public map[str, int] getCCcategorizedRisk(){
+public map[str, int] getCategorizedRisk(rel[str, loc] riskRelation){
 
-	methodCCRel = getCCforMethods();
 	map[str,int] results = ();
 	str riskCategory ="";
 	
@@ -89,7 +109,7 @@ public map[str, int] getCCcategorizedRisk(){
 	results["m"]	= 0;
 	results["l"]	= 0;
 	
-	for (r <- methodCCRel){
+	for (r <- riskRelation){
 		riskCategory = r[0];
 		methodLines = countLines(r[1]);
 		results[riskCategory] += (methodLines["lines"] - (methodLines["comments"] + methodLines["emptylines"]));
@@ -99,15 +119,16 @@ public map[str, int] getCCcategorizedRisk(){
 	return results;
 }
 
-public str calcRelativeRisk() {
 
-	ccRelativeRisk = getCCcategorizedRisk();	
+public str calcRelativeRisk(map[str, int] riskMap) {
+	
 	
 	// Calculate the percentages of the total code per category.
-	real moderatePerc = (toReal(ccRelativeRisk["m"]) / (toReal(totalPureLines))) * 100.0;
-	real highPerc = (toReal(ccRelativeRisk["h"]) / (toReal(totalPureLines))) * 100.0;
-	real veryPerc = (toReal(ccRelativeRisk["vh"]) / (toReal(totalPureLines))) * 100.0;
+	real moderatePerc 	= (toReal(riskMap["m"]) / (toReal(totalPureLines))) * 100.0;
+	real highPerc 		= (toReal(riskMap["h"]) / (toReal(totalPureLines))) * 100.0;
+	real veryPerc 		= (toReal(riskMap["vh"]) / (toReal(totalPureLines))) * 100.0;
 	
+	println("<veryPerc>,<highPerc>,<moderatePerc>");
 	// Decide what rank the code has according to the paper.
 	if (moderatePerc <= 25 && highPerc == 0 && veryPerc == 0) {
 		return "++";
@@ -148,4 +169,9 @@ public int calcCC(Statement impl) {
         case infix(_,"||",_) : result += 1;
     }
     return result;
+}
+
+public void printUnitResults(){
+	println("Complexity Rank: <calcRelativeRisk(getCategorizedRisk(riskPerUnitCC()))>");
+	println("Unit Size Rank: <calcRelativeRisk(getCategorizedRisk(riskPerUnitSize()))>");
 }

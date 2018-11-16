@@ -2,7 +2,7 @@ package test_project;
 
 
 public class Cars {
-
+	public String a = "test \\ test";
     public String brand = null;
     public String model = null;
     public String color = null;
@@ -57,11 +57,11 @@ public class Cars {
     	 lala
     	 */
     	public int minFunction(int n1, int n2) {
-    	   int min;
+    	   int min;/*
     	   if (n1 > n2)
     	      min = n2;
     	   else
-    	      min = n1;
+    	     */ min = n1;
     	
     	   return min; 
     	}
