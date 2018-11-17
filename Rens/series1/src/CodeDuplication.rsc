@@ -14,9 +14,9 @@ import String;
 import FileReader;
 
 // Temporarily used from VolumeMetric.
-//public loc projectloc = |project://smallsql0.21_src/|;
+public loc projectloc = |project://smallsql0.21_src/|;
 public map[str, str] filterCharacters = (" " : "", "\t" : "", "\n" : "", "}" : "", "{" : "");
-public loc projectloc = |project://test_project/|;
+//public loc projectloc = |project://test_project/|;
 
 public int totalDuplicatedLines() {
 
@@ -301,7 +301,7 @@ public tuple[str,loc] getNextRelevantLine(loc l) {
 		// Get the next line.
 		nextLine = getNextLine(nextLine[1]);
 	}
-	return <nextLine[0], nextLine[1]>;
+	return <"", l>;
 }
 
 
