@@ -56,50 +56,57 @@ public list[tuple[int,loc]] calcUnitSize(){
 	return unitSize;
 }
 
-public rel[str, loc] calculateRisk(int n, rel[str,loc] strLoc,loc stateLoc,list[int] values){
-	if(n <= 10) {
-		strLoc += <"l", stateLoc>;
-	} else if (n <= 20) {
-		strLoc += <"m", stateLoc>;
-	} else if (n <= 50) {
-		strLoc += <"h", stateLoc>;
+public rel[str, loc, int] calculateRisk(int n, rel[str,loc,int] strLoc,loc stateLoc,list[int] values, bool linesOfCode){
+	int unitLines = 0;
+	if ( linesOfCode){
+		unitLines = n;
+	} else{
+		unitAllLines = countLines(stateLoc);
+		unitLines = unitAllLines["lines"] - (unitAllLines["comments"] + unitAllLines["emptylines"]+ unitAllLines["brackets"]);
+	}
+	if(n <= values[0]) {
+		strLoc += <"l", stateLoc,unitLines>;
+	} else if (n <= values[1]) {
+		strLoc += <"m", stateLoc,unitLines>;
+	} else if (n <= values[2]) {
+		strLoc += <"h", stateLoc,unitLines>;
 	} else {
-		strLoc += <"vh", stateLoc>;
+		strLoc += <"vh", stateLoc,unitLines>;
 	}
 	return strLoc;
 }
 
-public rel[str,loc] riskPerUnitSize(){
+public rel[str,loc,int] riskPerUnitSize(){
 	unitSize = calcUnitSize();
-	rel[str, loc] results = {};
+	rel[str, loc,int] results = {};
 	list[int] values = [15,30,60];
 	for (units <- unitSize){
 		linesUnit 	= units[0];
 		locationUnit= units[1]; 
-		results = calculateRisk(linesUnit,results,locationUnit,values);
+		results = calculateRisk(linesUnit,results,locationUnit,values,true);
 	}
 	return results;
 }
 
 
 // Generate the CC for each of the methods and return a map of all methods (units) and their CC
-public rel[str, loc] riskPerUnitCC() {
+public rel[str, loc,int] riskPerUnitCC() {
 
 	allStatements = allMethods();
 	int cc = 0;
-	rel[str, loc] results = {};
+	rel[str, loc, int] results = {};
 	list[int] values = [10,20,50];
 	
 	for (statement <- allStatements){
 		cc = calcCC(statement);
 		loc stateLoc = statement.src;
-		results = calculateRisk(cc,results,stateLoc,values);
+		results = calculateRisk(cc,results,stateLoc,values,false);
 	}	
 	
 	return results;	
 }
 
-public map[str, int] getCategorizedRisk(rel[str, loc] riskRelation){
+public map[str, int] getCategorizedRisk(rel[str, loc, int] riskRelation){
 
 	map[str,int] results = ();
 	str riskCategory ="";
@@ -111,8 +118,8 @@ public map[str, int] getCategorizedRisk(rel[str, loc] riskRelation){
 	
 	for (r <- riskRelation){
 		riskCategory = r[0];
-		methodLines = countLines(r[1]);
-		results[riskCategory] += (methodLines["lines"] - (methodLines["comments"] + methodLines["emptylines"]));
+		methodLines = r[2];
+		results[riskCategory] += methodLines;
 		
 	}
 	

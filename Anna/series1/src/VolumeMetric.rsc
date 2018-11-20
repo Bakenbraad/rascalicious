@@ -32,7 +32,7 @@ public map[str,int] countProjectLines(list[loc] allLocations){
 }
 
 public str filterLines(str line){
-	while(/<before:.*>.+\".+\"<after:.*>/:=line){
+	while(/<before:.*>.\".*\"<after:.*>/:=line){
 		
 			line = before+" "+after;
 		}
@@ -57,7 +57,7 @@ public map[str,int] countLines(loc curProjectLoc) {
 			results["lines"] += 1;
 			
 			// checks for one line comments
-			if(startsWith(trim(line),"//") || contains(line,"//") || (startsWith(trim(line),"/*") && endsWith(trim(line),"*/"))){
+			if(startsWith(trim(line),"//") ||  (startsWith(trim(line),"/*") && endsWith(trim(line),"*/"))){
 				results["comments"] += 1;
 			}
 			// checks for comments of more than one line
