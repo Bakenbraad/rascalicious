@@ -57,7 +57,7 @@ public class Cars {
     	 lala
     	 */
     	public int minFunction(int n1, int n2) {
-    	   int min;/*
+    	   int min;/*huhu
     	   if (n1 > n2)
     	      min = n2;
     	   else
