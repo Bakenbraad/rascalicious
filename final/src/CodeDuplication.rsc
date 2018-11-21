@@ -126,7 +126,7 @@ public tuple[int,str,real] showCodeDuplication(loc location, map[str,int] projec
 	}
 	else rank = "--";
 		
-	return <duplicatedLines, duplicationPercentage, rank>;
+	return <duplicatedLines, rank, duplicationPercentage>;
 }
 
 public int getProjectCodeDuplication(loc projectloc, int printMode) {

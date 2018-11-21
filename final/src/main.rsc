@@ -19,30 +19,31 @@ public loc projectLoc = |project://hsqldb-2.3.1|;
 
 public tuple[map[str, int], int,str] volumeResults 	= showLines(projectLoc);
 public map[int,str]	unitRankingResults 				= unitRank(projectLoc);
+public tuple[int,str,real] codeDuplicationResults	= showCodeDuplication(projectLoc, volumeResults[0]);
 
 public void main(){
 	
 	println("Printing results\n\nVolume metric:");
 	println("Lines in total: <volumeResults[0]["lines"]>\nLines of pure code: <volumeResults[1]>\nLines of comments: <volumeResults[0]["comments"]>\nEmpty Lines: <volumeResults[0]["emptylines"]>\nBrackets: <volumeResults[0]["brackets"]>");
 	println("Rank: <volumeResults[2]>\n");
-		
 	
-	//println("\nCode duplication:");
-	//int duplicatedLines = getProjectCodeDuplication(projectLoc,1);
-	//println("Duplication percentage: <((duplicatedLines * 1.0 ) / ((codeLines + totalLines["brackets"]) * 1.0)) * 100>% or <duplicatedLines> out of <codeLines> lines");
-	
+	println("Code duplication:");
+	println("Duplicated lines in project: <codeDuplicationResults[0]>\nPercentage of total: <codeDuplicationResults[2]>");
+	println("Rank: <codeDuplicationResults[1]>\n");
+
 	println("Complexity Rank: <unitRankingResults[0]>");
 	println("Unit Size Rank: <unitRankingResults[1]>");
 	table();
 }
 
-//TODO: finish the table, i am waiting for duplication
+//TODO: Do we add duplication to any of the analysability/changeability/testability metrics.
 public void table(){
 	map[str,int] intRanking = ();
 		
 	intRanking["volume"] = strToInt(volumeResults[2]);
 	intRanking["cc"] = strToInt(unitRankingResults[0]);
 	intRanking["unitsize"] = strToInt(unitRankingResults[1]);
+	intRanking["duplication"] = strToInt(codeDuplicationResults[1]);
 	analysability = intToStr((intRanking["volume"]+intRanking["unitsize"])/2);
 	changeability = intToStr(intRanking["cc"]);
 	testability = intToStr((intRanking["cc"]+intRanking["unitsize"])/2);
