@@ -6,6 +6,8 @@ import List;
 import Map;
 import String;
 
+public map[str, str] filterCharacters = (" " : "", "\t" : "", "\n" : "");
+
 // Get all java files from a project location.
 public list[loc] findJavaFiles(loc l) {
 	return crawl(l, ".java");
@@ -40,14 +42,115 @@ public tuple[str,loc] getNextLine(loc l) {
 } 
 
 // Filters everything between quotation marks out of a line.
-public str filterLines(str line){
+public str filterNestedLines(str line){
 	while(/<before:.*>.\".*\"<after:.*>/:=line) {		
 			line = before+" "+after;
 		}
 	return line;
 }
 
-// Not or logical operator.
-public bool notOr(bool b) {
-	return (!b || false);
+
+public map[str,int] countLines(loc curProjectLoc) {
+
+	map[str,int] results = ();
+	
+	results["lines"] 		= 0;
+	results["comments"]		= 0;
+	results["emptylines"]	= 0;
+	results["brackets"]		= 0;
+	int linesOfCom 			= 0;
+	int counter 			= 0;
+	brackets				= ("{":"", "}":"");			
+	
+	
+		for (line <- readFileLines(curProjectLoc)) {
+			line = filterNestedLines(line);
+			results["lines"] += 1;
+			
+			// checks for one line comments
+			if(startsWith(trim(line),"//") || contains(line,"//") || (startsWith(trim(line),"/*") && endsWith(trim(line),"*/"))){
+				results["comments"] += 1;
+			}
+			// checks for comments of more than one line
+			else if (startsWith(trim(line),"/*") || linesOfCom>0 || contains(trim(line),"/*")){
+				if((!startsWith(trim(line),"/*") && contains(trim(line),"/*"))){
+					counter+=1;
+				}
+				linesOfCom += 1;
+				if (endsWith(trim(line),"*/")){
+					results["comments"] += (linesOfCom - counter);
+					linesOfCom 	= 0;
+					counter		= 0;
+				}
+				else if (contains(line,"*/")){
+					counter+=1;
+					results["comments"] += (linesOfCom - counter);
+					linesOfCom 	= 0;
+					counter		= 0;
+				}
+			}
+			// checks for empty lines
+			else if(trim(line) == ""){
+				results["emptylines"]+=1;
+			}
+			else if(escape(trim(line), brackets)==""){
+				results["brackets"]+=1;
+			}
+		 }
+		
+	return results;
+}
+
+public tuple[str, int] filterLine(str line, int multiLineCom) {
+
+	// Remove any comment indicators nested in strings.
+	filteredLine = trim(filterNestedLines(line));
+	
+	if(startsWith(filteredLine,"//") || (startsWith(filteredLine,"/*") && endsWith(filteredLine,"*/")) && multiLineCom != 0){
+		// We have  a single comment line
+		return <"", multiLineCom>;						
+	} else if (contains(filteredLine,"/*") && multiLineCom == 0){
+		// We enter a mulitline comment.
+		multiLineCom = 1;
+		
+		if (startsWith(trim(line), "/*")) {
+			return <"",multiLineCom>;
+		} else {
+			lineSplit = split("/*", trim(line));
+			if (size (lineSplit) > 1 && contains(lineSplit[1], "*/")) {
+				// A multiline comment starts and ends on this line, after some code.
+				modifiedLine = escape(lineSplit[0], filterCharacters);
+				multiLineCom = 0;
+				return <modifiedLine, multiLineCom>;
+			} else if (size(lineSplit) > 1) {
+				modifiedLine = escape(lineSplit[0], filterCharacters);
+				return <modifiedLine, multiLineCom>;
+			}
+		}		
+	} else if (multiLineCom > 0) {
+		if (endsWith(trim(line),"*/")){
+			// A mulitline comment ends here.
+			multiLineCom = 0;
+			return <"", multiLineCom>;
+		}
+		else if (contains(line,"*/")){
+			// A mulitline comment ends somewhere in this line.
+			multiLineCom = 0;
+			lineSplit = split("*/", trim(line));
+			
+			if (size(lineSplit) > 1) {
+				modifiedLine = escape(lineSplit[1], filterCharacters);
+				return <modifiedLine, multiLineCom>;	
+			} else {
+				return <"", multiLineCom>;	
+			}				
+		}
+		return <"", multiLineCom>;
+	} else if (contains(filteredLine, "//") && multiLineCom == 0) {
+		lineSplit = split("//", trim(line));
+		modifiedLine = escape(lineSplit[0], filterCharacters);
+		return <modifiedLine, multiLineCom>;	
+		
+	}
+	return <escape(trim(line),filterCharacters), multiLineCom>;			
 }

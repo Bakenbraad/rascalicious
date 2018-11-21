@@ -13,78 +13,24 @@ import Map;
 import String;
 import FileReader;
 
-// Temporarily used from VolumeMetric.
-public loc projectloc = |project://smallsql0.21_src/|;
-public map[str, str] filterCharacters = (" " : "", "\t" : "", "\n" : "", "}" : "", "{" : "");
-//public loc projectloc = |project://test_project/|;
-
-public int totalDuplicatedLines() {
-
-	// Results should be the block as a string and the locations in which the block occurs.
-	map[str, list[loc]] results = ();
-	map[int, tuple[loc, str]] resultPerFile = ();
-	
-	javaFiles = findJavaFiles(projectloc);
-	for (l <- javaFiles) {
-		// For each file add the locations to the results map (block as string mapped to list of location of occurrance).
-		resultPerFile = linesToLocMap(l);
-		for (lineNumber <- resultPerFile) {
-			if (resultPerFile[lineNumber][1] in results) {
-				results[resultPerFile[lineNumber][1]] += [resultPerFile[lineNumber][0]];
-			} else {
-				results[resultPerFile[lineNumber][1]] = [resultPerFile[lineNumber][0]];
-			}			
-		}
-	}
-	
-	// Now that we have a duplication map for the individual lines, count the duplicates.
-	totalDuplicateLines = 0;
-	uniqueLines = 0;
-	for (occurrance <- results) {
-		duplicates = results[occurrance];
-		if (size(duplicates) > 1) {
-			totalDuplicateLines += size(duplicates);
-		} else {
-			uniqueLines += 1;
-		}
-	}
-	println("Total pure code lines: <uniqueLines + totalDuplicateLines>, percentage of duplication: <(uniqueLines / totalDuplicateLines) * 100>");
-	return totalDuplicateLines;
-}
-
 public map[int, tuple[loc, str]] linesToLocMap(loc location){
 	
-	int linesOfCom = 0;
+	int multiLineComment = 0;
 	int linesCount = 0;
 	int totalLength = 0;
 	
+	fileText = readFile(location);
+	//fileFiltered = escape(fileText,("\r" : "")); 
+	fileLines = split("\n",fileText);
+	
 	// Return the list of modified strings (no comments and no whitespace) in combination to their original start line.
 	results = ();
-	
-	for (line <- readFileLines(location)) {
+	for (line <- fileLines) {
 		linesCount += 1;
-		filteredLine = filterLines(line);
-			
-		// Check if a line is a comment (Should not affect code duplication).
-		if(startsWith(trim(filteredLine), "//") || (startsWith(trim(filteredLine),"/*") && endsWith(trim(filteredLine),"*/"))) {
-			// We have  a comment line, dont add the string!
-			results += (linesCount : <location(totalLength, size(line)), "">);				
-		} else if (startsWith(trim(filteredLine),"/*") || linesOfCom > 0) {
-			// Skip multiline code strings.
-			linesOfCom += 1;
-			if (endsWith(trim(line),"*/")){
-				linesOfCom = 0;
-			}
-			results += (linesCount : <location(totalLength, size(line)), "">);
-		} else if (contains(filteredLine, "//")) {
-			// We have a line of code with a comment, cut off the comment.
-			lineSplit = split("//", trim(line));
-			modifiedLine = escape(lineSplit[1], filterCharacters);
-			results += (linesCount : <location(totalLength, size(line)), modifiedLine>);
-		} else {
-			modifiedLine = escape(line, filterCharacters);
-			results += (linesCount : <location(totalLength, size(line)), modifiedLine>);
-		}
+		
+		<filteredLine, multiLineComment> = filterLine(line, multiLineComment);
+		results += (linesCount : <location(totalLength, size(line)), escape(filteredLine,filterCharacters)>);
+	
 		// Add the line length plus 2 (for the /n unicode chars left out by the read function).
 		totalLength += (size(line) + 2);
 		
@@ -99,7 +45,7 @@ public map[str, list[loc]] generateAggregates(loc location, map[str, list[loc]] 
 	if (locMapSize - 5 < 0) {
 		return results;
 	}
-	for (int i <- [1..locMapSize - 4]) {
+	for (int i <- [1..locMapSize - 5]) {
 				
 		int j = 0;
 		int blocksize = 0;
@@ -139,8 +85,10 @@ public map[str, list[loc]] generateAggregates(loc location, map[str, list[loc]] 
 		
 		// If the block is complete, save it in the results map and move to the next one.
 		if (blocksize == 6) {
-			if (block in results) {
-				results[block] += (location(startOfBlock, endOfBlock));
+			
+			locationBlock = (location(startOfBlock, endOfBlock));
+			if (block in results) {				
+				results[block] += locationBlock;
 			}
 			else {
 				results[block] = [(location(startOfBlock, endOfBlock))];
@@ -150,7 +98,7 @@ public map[str, list[loc]] generateAggregates(loc location, map[str, list[loc]] 
 	return results;
 }
 
-public void main() {
+public int getProjectCodeDuplication(loc projectloc, int printMode) {
 
 	// Results should be the block as a string and the locations in which the block occurs.
 	map[str, list[loc]] results = ();
@@ -162,7 +110,7 @@ public void main() {
 	}
 	// Keep a list of the areas so you dont have to expand the same area over and over.
 	// File pairs mapped to all the intervals of duplication.
-	map[tuple[str, str], list[tuple[loc, loc]]] duplicateAreas = ();
+	map[tuple[str, str], list[tuple[tuple[loc, loc], int]]] duplicateAreas = ();
 	
 	// Expand the duplications found in all the files.
 	for (occurrance <- results) {	
@@ -172,45 +120,54 @@ public void main() {
 			pairs = dupCombinations(duplicates);
 			for (pair <- pairs) {
 				nestedPair = false;
-				if (<pair[0].uri, pair[1].uri> in duplicateAreas) {
+				if (<pair[0][0].uri, pair[0][1].uri> in duplicateAreas) {
 					// There are already duplicate areas known between these files.
 					// check if this pair is already covered by another
-					intervals = duplicateAreas[<pair[0].uri, pair[1].uri>];
+					intervals = duplicateAreas[<pair[0][0].uri, pair[0][1].uri>];
 					
 					for (i <- intervals) {
-						if (!nestedPair && isSubLocOf(pair[0], i[0]) && isSubLocOf(pair[1], i[1])) {
+						if (!nestedPair && isSubLocOf(pair[0][0], i[0][0]) && isSubLocOf(pair[0][1], i[0][1])) {
 							nestedPair = true;							
 						}
 					}
 				} else {
 					// No intervals yet known, add it unconditionally.
 					expandedBlocks = tryExpandBlockPair(pair);
-					duplicateAreas[<expandedBlocks[0].uri, expandedBlocks[1].uri>] = [expandedBlocks];
+					duplicateAreas[<expandedBlocks[0][0].uri, expandedBlocks[0][1].uri>] = [expandedBlocks];
 					// Set this to true so as to not add it twice.
 					nestedPair = true;
 				}
 				if (!nestedPair) { 
 					// No larger pair between these files known, expand and add.
 					expandedBlocks = tryExpandBlockPair(pair);
-					duplicateAreas[<expandedBlocks[0].uri, expandedBlocks[1].uri>] += [expandedBlocks];
+					duplicateAreas[<expandedBlocks[0][0].uri, expandedBlocks[0][1].uri>] += [expandedBlocks];
 					
 					// Remove any smaller pair. This makes sure that no other subpairs are considered in the future.
-					intervalsNew = [ni | ni <- duplicateAreas[<expandedBlocks[0].uri, expandedBlocks[1].uri>], !isSubLocOf(ni[0], expandedBlocks[0]), !isSubLocOf(ni[1], expandedBlocks[1])];
-					duplicateAreas[<expandedBlocks[0].uri, expandedBlocks[1].uri>] = intervalsNew + [expandedBlocks];
-				}
-				
+					intervalsNew = [ni | ni <- duplicateAreas[<expandedBlocks[0][0].uri, expandedBlocks[0][1].uri>], !isSubLocOf(ni[0][0], expandedBlocks[0][0]), !isSubLocOf(ni[0][1], expandedBlocks[0][1])];
+					duplicateAreas[<expandedBlocks[0][0].uri, expandedBlocks[0][1].uri>] = intervalsNew + [expandedBlocks];
+				}				
 			}
 		}
 	}
+	duplicatedLines = 0;
 	for (fileArea <- duplicateAreas) {
 		dupList = duplicateAreas[fileArea];
-		println("Duplication found between files <fileArea[0]> and <fileArea[1]>\n");
+		if (printMode == 1) {
+			println("Duplication found between files <fileArea[0]> and <fileArea[0]>\n");			
+		}
+
 		for (dupBlocks <- dupList) {			
-			println("See code in the following locations:");
-			println("<dupBlocks[0]>");
-			println("<dupBlocks[1]>\n");
+			if(printMode == 1) {
+				println("See code in the following locations:");
+				println("<dupBlocks[0][0]>");
+				println("<dupBlocks[0][1]>");
+				println("For a total lines of <dupBlocks[1]>\n");
+			}			
+			// Add the line size of the duplicated block to the duplicated lines counter.
+			duplicatedLines += dupBlocks[1];
 		}		
 	}
+	return (duplicatedLines);
 }
 
 public bool isSubLocOf(loc l, loc superloc) {
@@ -220,15 +177,19 @@ public bool isSubLocOf(loc l, loc superloc) {
 	return false;
 }
 
-public tuple[loc, loc] tryExpandBlockPair(tuple[loc, loc] pair) {
+public tuple[tuple[loc, loc], int] tryExpandBlockPair(tuple[tuple[loc, loc], int] pair) {
 
-	nextRelLine1 = getNextRelevantLine(pair[0]);
-	nextRelLine2 = getNextRelevantLine(pair[1]);
+	nextRelLine1 = getNextRelevantLine(pair[0][0]);
+	nextRelLine2 = getNextRelevantLine(pair[0][1]);
 	
 	if (nextRelLine1[0] == nextRelLine2[0] && nextRelLine1[0] != ""){
 		// Expand the blocks with this line
-		pair[0] = addLineToLoc(pair[0], nextRelLine1[1]);
-		pair[1] = addLineToLoc(pair[1], nextRelLine2[1]);
+		tup1 = addLineToLoc(pair[0][0], nextRelLine1[1]);
+		tup2 = addLineToLoc(pair[0][1], nextRelLine2[1]);
+		pair[0] = <tup1,tup2>;
+		
+		// Add one line
+		pair[1] += 1;
 				
 		// Block has changed, call in recursion.
 		return tryExpandBlockPair(pair);
@@ -244,17 +205,17 @@ public loc addLineToLoc(loc l, loc nl) {
 }
 
 // Generate all block combinations we need to explore.
-public lrel[loc, loc] dupCombinations(list[loc] ls) {
+public lrel[tuple[loc, loc], int] dupCombinations(list[loc] ls) {
 
-	lrel[loc, loc] res = [];
+	lrel[tuple[loc, loc], int] res = [];
 	int s = size(ls);
 	for (i <- [0..s]) {
 		for (j <- [0..s]) {
 			if (i != j) {
 				fst = ls[i];
 				snd = ls[j];
-				if (!(<snd, fst> in res)) {
-					res += [<fst, snd>];
+				if (!(<<snd, fst>,6> in res)) {
+					res += [<<fst, snd>,6>];
 				}
 			}
 		}
@@ -265,43 +226,22 @@ public lrel[loc, loc] dupCombinations(list[loc] ls) {
 public tuple[str,loc] getNextRelevantLine(loc l) {
 	
 	nextLine = getNextLine(l);
-	linesOfCom = 0;
+	multiLineComment = 0;
 	fileLength = getFileLength(toLocation(l.uri));
 	
 	while(nextLine[1].offset + nextLine[1].length <= fileLength) {
 
-		filteredLine = filterLines(nextLine[0]);
-		
-		// Check if the line is a line of code or comment, if mixed, clip and return.
-		if(startsWith(trim(filteredLine), "//") || (startsWith(trim(filteredLine),"/*") && endsWith(trim(filteredLine),"*/"))) {
-			// We have a pure comment line, NOP.
-			l = l;
-		} else if (startsWith(trim(filteredLine),"/*") || linesOfCom > 0) {
-			// Skip over multiline code strings.
-			linesOfCom += 1;
-			if (endsWith(trim(nextLine[0]),"*/")){
-				linesOfCom = 0;
-			}
-		} else if (contains(filteredLine, "//")) {
-			// We have a line of code with a comment appended, cut off the comment.
-			lineSplit = split("//", trim(nextLine[0]));
-			modifiedLine = escape(lineSplit[1], filterCharacters);
-			if (modifiedLine != "") {
-				nextLoc = nextLine[1];
-				return <modifiedLine, nextLoc>;
-			}			
-		} else {
-			// Remove all whitespace and add the string to the list of modified strings.
-			modifiedLine = escape(nextLine[0], filterCharacters);
-			if (modifiedLine != "") {
-				nextLoc = nextLine[1];
-				return <modifiedLine, nextLoc>;
-			}
-		}	
+		<filteredLine, multiLineComment> = filterLine(nextLine[0], multiLineComment);
+		if (filteredLine != "") {
+			return <filteredLine, nextLine[1]>;
+		}
 		// Get the next line.
 		nextLine = getNextLine(nextLine[1]);
 	}
 	return <"", l>;
 }
 
-
+// Not or logical operator.
+public bool notOr(bool b) {
+	return (!b || false);
+}

@@ -1,281 +1,200 @@
-/* =============================================================
- * SmallSQL : a free Java DBMS library for the Java(tm) platform
- * =============================================================
+/* Copyright (c) 2001-2011, The HSQL Development Group
+ * All rights reserved.
  *
- * (C) Copyright 2004-2006, by Volker Berlin.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- * Project Info:  http://www.smallsql.de/
+ * Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
  *
- * This library is free software; you can redistribute it and/or modify it 
- * under the terms of the GNU Lesser General Public License as published by 
- * the Free Software Foundation; either version 2.1 of the License, or 
- * (at your option) any later version.
+ * Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
  *
- * This library is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
- * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public 
- * License for more details.
+ * Neither the name of the HSQL Development Group nor the names of its
+ * contributors may be used to endorse or promote products derived from this
+ * software without specific prior written permission.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, 
- * USA.  
- *
- * [Java is a trademark or registered trademark of Sun Microsystems, Inc. 
- * in the United States and other countries.]
- *
- * ---------------
- * TestOperatoren.java
- * ---------------
- * Author: Volker Berlin
- * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL HSQL DEVELOPMENT GROUP, HSQLDB.ORG,
+ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package smallsql.junit;
-
-import junit.framework.*;
-import java.sql.*;
-import java.math.*;
-
-public class TestOperatoren extends BasicTestCase {
-
-    private TestValue testValue;
-
-    private static final String table = "table_functions";
-
-    private static final TestValue[] TESTS = new TestValue[]{
-        a("tinyint"           , new Byte( (byte)3),     new Byte( (byte)4)),
-        a("byte"              , new Byte( (byte)3),     new Byte( (byte)4)),
-        a("smallint"          , new Short( (short)3),   new Short( (short)4)),
-        a("int"               , new Integer(3),         new Integer(4)),
-        a("bigint"            , new Long(3),            new Long(4)),
-        a("real"              , new Float(3.45),        new Float(4.56)),
-        a("float"             , new Float(3.45),        new Float(4.56)),
-        a("double"            , new Double(3.45),       new Double(4.56)),
-        a("smallmoney"        , new Float(3.45),        new Float(4.56)),
-        a("money"             , new Float(3.45),        new Float(4.56)),
-        a("money"             , new Double(3.45),       new Double(4.56)),
-        a("numeric(19,2)"     , new BigDecimal("3.45"), new BigDecimal("4.56")),
-        a("decimal(19,2)"     , new BigDecimal("3.45"), new BigDecimal("4.56")),
-        a("varnum(28,2)"      , new BigDecimal("2.34"), new BigDecimal("3.45")),
-        a("number(28,2)"      , new BigDecimal("2.34"), new BigDecimal("3.45")),
-        a("varchar(100)"      , new String("abc"),      new String("qwert")),
-        a("varchar(60000)"    , new String(new char[43210]),      new String("qwert")),
-        a("nvarchar(100)"     , new String("abc"),      new String("qwert")),
-        a("varchar2(100)"     , new String("abc"),      new String("qwert")),
-        a("nvarchar2(100)"    , new String("abc"),      new String("qwert")),
-        a("character(100)"    , new String("abc"),      new String("qwert")),
-        a("char(100)"         , new String("abc"),      new String("qwert")),
-        a("nchar(100)"        , new String("abc"),      new String("qwert")),
-        a("text"              , new String("abc"),      new String("qwert")),
-        a("ntext"             , new String("abc"),      new String("qwert")),
-        a("date"              , new Date(99, 1,1),      new Date(99, 2,2)),
-        a("time"              , new Time(9, 1,1),       new Time(9, 2,2)),
-        a("timestamp"         , new Timestamp(99, 1,1,0,0,0,0),      new Timestamp(99, 2,2,0,0,0,0)),
-        a("datetime"          , new Timestamp(99, 1,1,0,0,0,0),      new Timestamp(99, 2,2,0,0,0,0)),
-        a("smalldatetime"     , new Timestamp(99, 1,1,0,0,0,0),      new Timestamp(99, 2,2,0,0,0,0)),
-        a("binary(100)"       , new byte[]{12, 45, 1},  new byte[]{12, 45, 2, 56, 89}),
-        a("varbinary(100)"    , new byte[]{12, 45, 1},  new byte[]{12, 45, 2, 56, 89}),
-        a("varbinary(60000)"  , new byte[54321],        new byte[]{12, 45, 2, 56, 89}),
-        a("raw(100)"          , new byte[]{12, 45, 1},  new byte[]{12, 45, 2, 56, 89}),
-        a("long raw"          , new byte[]{12, 45, 1},  new byte[]{12, 45, 2, 56, 89}),
-        a("longvarbinary"     , new byte[]{12, 45, 1},  new byte[]{12, 45, 2, 56, 89}),
-        a("blob"              , new byte[]{12, 45, 1},  new byte[]{12, 45, 2, 56, 89}),
-        a("image"             , new byte[]{12, 45, 1},  new byte[]{12, 45, 2, 56, 89}),
-        a("boolean"           , Boolean.FALSE,          Boolean.TRUE),
-        a("bit"               , Boolean.FALSE,          Boolean.TRUE),
-        a("uniqueidentifier"  , "12345678-3445-3445-3445-1234567890ab",      "12345679-3445-3445-3445-1234567890ac"),
-    };
 
 
-    TestOperatoren(TestValue testValue){
-        super(testValue.dataType);
-        this.testValue = testValue;
-    }
+package org.hsqldb;
 
-    public void tearDown(){
-        try{
-            Connection con = AllTests.getConnection();
-            Statement st = con.createStatement();
-            st.execute("drop table " + table);
-            st.close();
-        }catch(Throwable e){
-            //e.printStackTrace();
-        }
-    }
+import org.hsqldb.lib.IntKeyHashMap;
+import org.hsqldb.lib.IntValueHashMap;
+import org.hsqldb.lib.OrderedIntHashSet;
 
-    public void setUp(){
-        tearDown();
-        try{
-            Connection con = AllTests.getConnection();
-            Statement st = con.createStatement();
-            st.execute("create table " + table + "(a " + testValue.dataType +", b " + testValue.dataType + ")");
-            st.close();
-            PreparedStatement pr = con.prepareStatement("INSERT into " + table + "(a,b) Values(?,?)");
+/**
+ * Defines and enumerates reserved and non-reserved SQL keywords.<p>
+ *
+ * @author Fred Toussi (fredt@users dot sourceforge.net)
+ * @version 2.3.0
+ * @since 1.7.2
+ */
+public class Tokens {
 
-            pr.setObject( 1, testValue.small);
-            pr.setObject( 2, testValue.large);
-            pr.execute();
-
-            pr.setObject( 1, testValue.small);
-            pr.setObject( 2, testValue.small);
-            pr.execute();
-
-            pr.setObject( 1, testValue.large);
-            pr.setObject( 2, testValue.large);
-            pr.execute();
-
-            pr.setObject( 1, testValue.large);
-            pr.setObject( 2, testValue.small);
-            pr.execute();
-
-            pr.setObject( 1, null);
-            pr.setObject( 2, testValue.small);
-            pr.execute();
-
-            pr.setObject( 1, testValue.small);
-            pr.setObject( 2, null);
-            pr.execute();
-
-            pr.setObject( 1, null);
-            pr.setObject( 2, null);
-            pr.execute();
-            pr.close();
-        }catch(Throwable e){
-            e.printStackTrace();
-        }
-    }
-
-
-    public void runTest() throws Exception{
-        Connection con = AllTests.getConnection();
-        Statement st = con.createStatement();
-        ResultSet rs;
-
-        rs = st.executeQuery("Select * from " + table + " where 1 = 0");
-        assertFalse( "To many rows", rs.next() );
-
-        rs = st.executeQuery("Select * from " + table + " where a = b");
-        assertTrue( "To few rows", rs.next() );
-        assertEqualsObject( "Values not equals", rs.getObject(1), rs.getObject(2), false);
-        assertTrue( "To few rows", rs.next() );
-        assertEqualsObject( "Values not equals", rs.getObject(1), rs.getObject(2), false);
-        assertFalse( "To many rows", rs.next() );
-
-        rs = st.executeQuery("Select * from " + table + " where a <= b and b <= a");
-        assertTrue( "To few rows", rs.next() );
-        assertEqualsObject( "Values not equals", rs.getObject(1), rs.getObject(2), false);
-        assertTrue( "To few rows", rs.next() );
-        assertEqualsObject( "Values not equals", rs.getObject(1), rs.getObject(2), false);
-        assertFalse( "To many rows", rs.next() );
-
-        rs = st.executeQuery("Select * from " + table + " where (a > (b))");
-        assertTrue( "To few rows", rs.next() );
-        assertFalse( "To many rows", rs.next() );
-
-        rs = st.executeQuery("Select * from " + table + " where a >= b");
-        assertTrue( "To few rows", rs.next() );
-        assertTrue( "To few rows", rs.next() );
-        assertTrue( "To few rows", rs.next() );
-        assertFalse( "To many rows", rs.next() );
-
-        rs = st.executeQuery("Select * from " + table + " where not (a >= b)");
-        assertTrue( "To few rows", rs.next() );
-        assertTrue( "To few rows", rs.next() );
-        assertTrue( "To few rows", rs.next() );
-        assertTrue( "To few rows", rs.next() );
-        assertFalse( "To many rows", rs.next() );
-
-        rs = st.executeQuery("Select * from " + table + " where a < b");
-        assertTrue( "To few rows", rs.next() );
-        assertFalse( "To many rows", rs.next() );
-
-        rs = st.executeQuery("Select * from " + table + " where a < b or a>b");
-        assertTrue( "To few rows", rs.next() );
-        assertTrue( "To few rows", rs.next() );
-        assertFalse( "To many rows", rs.next() );
-
-        rs = st.executeQuery("Select * from " + table + " where a <= b");
-        assertTrue( "To few rows", rs.next() );
-        assertTrue( "To few rows", rs.next() );
-        assertTrue( "To few rows", rs.next() );
-        assertFalse( "To many rows", rs.next() );
-
-        rs = st.executeQuery("Select * from " + table + " where a <> b");
-        assertTrue( "To few rows", rs.next() );
-        assertTrue( "To few rows", rs.next() );
-        assertFalse( "To many rows", rs.next() );
-
-        PreparedStatement pr = con.prepareStatement("Select * from " + table + " where a between ? and ?");
-        pr.setObject( 1, testValue.small);
-        pr.setObject( 2, testValue.large);
-        rs = pr.executeQuery();
-        assertTrue( "To few rows", rs.next() );
-        assertTrue( "To few rows", rs.next() );
-        assertTrue( "To few rows", rs.next() );
-        assertTrue( "To few rows", rs.next() );
-        assertTrue( "To few rows", rs.next() );
-        assertFalse( "To many rows", rs.next() );
-		pr.close();
-
-		pr = con.prepareStatement("Select * from " + table + " where a not between ? and ?");
-		pr.setObject( 1, testValue.small);
-		pr.setObject( 2, testValue.large);
-		rs = pr.executeQuery();
-		assertTrue( "To few rows", rs.next() );
-		assertTrue( "To few rows", rs.next() );
-		assertFalse( "To many rows", rs.next() );
-		pr.close();
-
-		pr = con.prepareStatement("Select * from " + table + " where a in(?,?)");
-		pr.setObject( 1, testValue.small);
-		pr.setObject( 2, testValue.large);
-		rs = pr.executeQuery();
-		assertTrue( "To few rows", rs.next() );
-		assertTrue( "To few rows", rs.next() );
-		assertTrue( "To few rows", rs.next() );
-        assertTrue( "To few rows", rs.next() );
-		assertTrue( "To few rows", rs.next() );
-		assertFalse( "To many rows", rs.next() );
-		pr.close();
-
-		pr = con.prepareStatement("Select * from " + table + " where a not in(?,?)");
-		pr.setObject( 1, testValue.small);
-		pr.setObject( 2, testValue.large);
-		rs = pr.executeQuery();
-		assertTrue( "To few rows", rs.next());
-		assertTrue( "To few rows", rs.next());
-		assertFalse( "To many rows", rs.next() );
-		pr.close();
-
-        st.close();
-    }
-
-    public static Test suite() throws Exception{
-        TestSuite theSuite = new TestSuite("Operatoren");
-        for(int i=0; i<TESTS.length; i++){
-            theSuite.addTest(new TestOperatoren( TESTS[i] ) );
-        }
-        return theSuite;
-    }
-
-    public static void main(String[] argv) {
-        junit.swingui.TestRunner.main(new String[]{TestOperatoren.class.getName()});
-    }
-
-
-
-    private static TestValue a(String dataType, Object small, Object large){
-        TestValue value = new TestValue();
-        value.dataType  = dataType;
-        value.small     = small;
-        value.large     = large;
-        return value;
-    }
-
-    private static class TestValue{
-        String dataType;
-        Object small;
-        Object large;
-    }
-
-}
+    // SQL 200n reserved words full set
+    static final String        T_ABS              = "ABS";
+    public static final String T_ALL              = "ALL";
+    static final String        T_ALLOCATE         = "ALLOCATE";
+    public static final String T_ALTER            = "ALTER";
+    static final String        T_AND              = "AND";
+    public static final String T_ANY              = "ANY";
+    static final String        T_ARE              = "ARE";
+    public static final String T_ARRAY            = "ARRAY";
+    public static final String T_ARRAY_AGG        = "ARRAY_AGG";
+    public static final String T_AS               = "AS";
+    static final String        T_ASENSITIVE       = "ASENSITIVE";
+    static final String        T_ASYMMETRIC       = "ASYMMETRIC";
+    static final String        T_AT               = "AT";
+    static final String        T_ATOMIC           = "ATOMIC";
+    public static final String T_AUTHORIZATION    = "AUTHORIZATION";
+    public static final String T_AVG              = "AVG";
+    static final String        T_BEGIN            = "BEGIN";
+    static final String        T_BETWEEN          = "BETWEEN";
+    public static final String T_BIGINT           = "BIGINT";
+    public static final String T_BINARY           = "BINARY";
+    static final String        T_BIT_LENGTH       = "BIT_LENGTH";
+    public static final String T_BLOB             = "BLOB";
+    public static final String T_BOOLEAN          = "BOOLEAN";
+    static final String        T_BOTH             = "BOTH";
+    static final String        T_BY               = "BY";
+    public static final String T_CALL             = "CALL";
+    static final String        T_CALLED           = "CALLED";
+    static final String        T_CARDINALITY      = "CARDINALITY";
+    public static final String T_CASCADED         = "CASCADED";
+    static final String        T_CASE             = "CASE";
+    static final String        T_CAST             = "CAST";
+    static final String        T_CEIL             = "CEIL";
+    static final String        T_CEILING          = "CEILING";
+    public static final String T_CHAR             = "CHAR";
+    static final String        T_CHAR_LENGTH      = "CHAR_LENGTH";
+    public static final String T_CHARACTER        = "CHARACTER";
+    static final String        T_CHARACTER_LENGTH = "CHARACTER_LENGTH";
+    public static final String T_CHECK            = "CHECK";
+    public static final String T_CLOB             = "CLOB";
+    static final String        T_CLOSE            = "CLOSE";
+    static final String        T_COALESCE         = "COALESCE";
+    public static final String T_COLLATE          = "COLLATE";
+    static final String        T_COLLECT          = "COLLECT";
+    static final String        T_COLUMN           = "COLUMN";
+    public static final String T_COMMIT           = "COMMIT";
+    static final String        T_CONDITION        = "CONDIITON";
+    public static final String T_CONNECT          = "CONNECT";
+    public static final String T_CONSTRAINT       = "CONSTRAINT";
+    public static final String T_CONVERT          = "CONVERT";
+    static final String        T_CORR             = "CORR";
+    static final String        T_CORRESPONDING    = "CORRESPONDING";
+    static final String        T_COUNT            = "COUNT";
+    static final String        T_COVAR_POP        = "COVAR_POP";
+    static final String        T_COVAR_SAMP       = "COVAR_SAMP";
+    public static final String T_CREATE           = "CREATE";
+    static final String        T_CROSS            = "CROSS";
+    static final String        T_CUBE             = "CUBE";
+    static final String        T_CUME_DIST        = "CUME_DIST";
+    static final String        T_CURRENT          = "CURRENT";
+    static final String        T_CURRENT_CATALOG  = "CURRENT_CATALOG";
+    static final String        T_CURRENT_DATE     = "CURRENT_DATE";
+    static final String T_CURRENT_DEFAULT_TRANSFORM_GROUP =
+        "CURRENT_DEFAULT_TRANSFORM_GROUP";
+    static final String T_CURRENT_PATH      = "CURRENT_PATH";
+    static final String T_CURRENT_ROLE      = "CURRENT_ROLE";
+    static final String T_CURRENT_SCHEMA    = "CURRENT_SCHEMA";
+    static final String T_CURRENT_TIME      = "CURRENT_TIME";
+    static final String T_CURRENT_TIMESTAMP = "CURRENT_TIMESTAMP";
+    static final String T_CURRENT_TRANSFORM_GROUP_FOR_TYPE =
+        "CURRENT_TRANSFORM_GROUP_FOR_TYPE";
+    static final String        T_CURRENT_USER      = "CURRENT_USER";
+    static final String        T_CURSOR            = "CURSOR";
+    static final String        T_CYCLE             = "CYCLE";
+    public static final String T_DATE              = "DATE";
+    public static final String T_DAY               = "DAY";
+    static final String        T_DEALLOCATE        = "DEALLOCATE";
+    public static final String T_DEC               = "DEC";
+    public static final String T_DECIMAL           = "DECIMAL";
+    static final String        T_DECLARE           = "DECLARE";
+    public static final String T_DEFAULT           = "DEFAULT";
+    public static final String T_DELETE            = "DELETE";
+    static final String        T_DENSE_RANK        = "DENSE_RANK";
+    static final String        T_DEREF             = "DEREF";
+    static final String        T_DESCRIBE          = "DESCRIBE";
+    static final String        T_DETERMINISTIC     = "DETERMINISTIC";
+    static final String        T_DISCONNECT        = "DISCONNECT";
+    static final String        T_DISTINCT          = "DISTINCT";
+    public static final String T_DO                = "DO";
+    public static final String T_DOUBLE            = "DOUBLE";
+    static final String        T_DROP              = "DROP";
+    static final String        T_DYNAMIC           = "DYNAMIC";
+    static final String        T_EACH              = "EACH";
+    static final String        T_ELEMENT           = "ELEMENT";
+    static final String        T_ELSE              = "ELSE";
+    static final String        T_ELSEIF            = "ELSEIF";
+    static final String        T_END               = "END";
+    static final String        T_END_EXEC          = "END_EXEC";
+    static final String        T_ESCAPE            = "ESCAPE";
+    static final String        T_EVERY             = "EVERY";
+    static final String        T_EXCEPT            = "EXCEPT";
+    static final String        T_EXEC              = "EXEC";
+    public static final String T_EXECUTE           = "EXECUTE";
+    static final String        T_EXISTS            = "EXISTS";
+    static final String        T_EXP               = "EXP";
+    public static final String T_EXTERNAL          = "EXTERNAL";
+    static final String        T_EXTRACT           = "EXTRACT";
+    public static final String T_FALSE             = "FALSE";
+    static final String        T_FETCH             = "FETCH";
+    static final String        T_FILTER            = "FILTER";
+    static final String        T_FIRST_VALUE       = "FIRST_VALUE";
+    public static final String T_FLOAT             = "FLOAT";
+    static final String        T_FLOOR             = "FLOOR";
+    public static final String T_FOR               = "FOR";
+    public static final String T_FOREIGN           = "FOREIGN";
+    static final String        T_FREE              = "FREE";
+    public static final String T_FROM              = "FROM";
+    static final String        T_FULL              = "FULL";
+    public static final String T_FUNCTION          = "FUNCTION";
+    static final String        T_FUSION            = "FUSION";
+    public static final String T_GET               = "GET";
+    static final String        T_GLOBAL            = "GLOBAL";
+    public static final String T_GRANT             = "GRANT";
+    static final String        T_GROUP             = "GROUP";
+    static final String        T_GROUPING          = "GROUPING";
+    static final String        T_HANDLER           = "HANDLER";
+    static final String        T_HAVING            = "HAVING";
+    static final String        T_HOLD              = "HOLD";
+    public static final String T_HOUR              = "HOUR";
+    static final String        T_IDENTITY          = "IDENTITY";
+    static final String        T_IF                = "IF";
+    static final String        T_IMPORT            = "IMPORT";
+    static final String        T_IN                = "IN";
+    static final String        T_INDICATOR         = "INDICATOR";
+    static final String        T_INNER             = "INNER";
+    static final String        T_INOUT             = "INOUT";
+    static final String        T_INSENSITIVE       = "INSENSITIVE";
+    public static final String T_INSERT            = "INSERT";
+    public static final String T_INT               = "INT";
+    public static final String T_INTEGER           = "INTEGER";
+    static final String        T_INTERSECT         = "INTERSECT";
+    static final String        T_INTERSECTION      = "INTERSECTION";
+    public static final String T_INTERVAL          = "INTERVAL";
+    static final String        T_INTO              = "INTO";
+    static final String        T_ITERATE           = "ITERATE";
+    public static final String T_IS                = "IS";
+    static final String        T_JAR               = "JAR";              // SQL/JRT
+    static final String        T_JOIN              = "JOIN";
+    static final String        T_LAG               = "LAG";
+    public static final String T_LANGUAGE          = "LANGUAGE";
+    static final String        T_LARGE             = "LARGE";
+    static final String        T_LAST_VALUE        = "LAST_VALUE";
+    static final String        T_LATERAL           = "LATERAL";
+    static final String        T_LEAD              = "LEAD";
