@@ -14,16 +14,77 @@ import String;
 import demo::common::Crawl;
 
 //public loc projectLoc = |project://test_project|;
-public loc projectLoc = |project://smallsql0.21_src|;
-//public loc projectLoc = |project://hsqldb-2.3.1|;
+//public loc projectLoc = |project://smallsql0.21_src|;
+public loc projectLoc = |project://hsqldb-2.3.1|;
+
+public tuple[map[str, int], int,str] volumeResults 	= showLines(projectLoc);
+public map[int,str]	unitRankingResults 				= unitRank(projectLoc);
 
 public void main(){
+	
 	println("Printing results\n\nVolume metric:");
-	<totalLines, codeLines> = showLines(projectLoc);	
+	println("Lines in total: <volumeResults[0]["lines"]>\nLines of pure code: <volumeResults[1]>\nLines of comments: <volumeResults[0]["comments"]>\nEmpty Lines: <volumeResults[0]["emptylines"]>\nBrackets: <volumeResults[0]["brackets"]>");
+	println("Rank: <volumeResults[2]>\n");
+		
 	
 	//println("\nCode duplication:");
 	//int duplicatedLines = getProjectCodeDuplication(projectLoc,1);
 	//println("Duplication percentage: <((duplicatedLines * 1.0 ) / ((codeLines + totalLines["brackets"]) * 1.0)) * 100>% or <duplicatedLines> out of <codeLines> lines");
 	
-	printUnitResults(projectLoc);
+	println("Complexity Rank: <unitRankingResults[0]>");
+	println("Unit Size Rank: <unitRankingResults[1]>");
+	table();
+}
+
+//TODO: finish the table, i am waiting for duplication
+public void table(){
+	map[str,int] intRanking = ();
+		
+	intRanking["volume"] = strToInt(volumeResults[2]);
+	intRanking["cc"] = strToInt(unitRankingResults[0]);
+	intRanking["unitsize"] = strToInt(unitRankingResults[1]);
+	analysability = intToStr((intRanking["volume"]+intRanking["unitsize"])/2);
+	changeability = intToStr(intRanking["cc"]);
+	testability = intToStr((intRanking["cc"]+intRanking["unitsize"])/2);
+	println("analysability: <analysability>, changeability: <changeability>, testability: <testability>");
+}
+
+public int strToInt(str ranking){
+	int intRanking = 0;
+	if(ranking == "--"){
+		intRanking	= 1;
+	}
+	else if(ranking == "-"){
+		intRanking	= 2;
+	}
+	else if(ranking == "o"){
+		intRanking	= 3;
+	}
+	else if(ranking == "+"){
+		intRanking	= 4;
+	}
+	else{
+		intRanking	= 5;
+	}
+	return intRanking;
+}
+
+public str intToStr(int ranking){
+	str strRanking = "";
+	if(ranking == 1){
+		strRanking	= "--";
+	}
+	else if(ranking == 2){
+		strRanking	= "-";
+	}
+	else if(ranking == 3){
+		strRanking	= "o";
+	}
+	else if(ranking == 4){
+		strRanking	= "+";
+	}
+	else{
+		strRanking	= "++";
+	}
+	return strRanking;
 }

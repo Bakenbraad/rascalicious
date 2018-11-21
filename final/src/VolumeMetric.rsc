@@ -29,7 +29,7 @@ public map[str,int] countProjectLines(list[loc] allLocations){
 }
 
 
-public tuple[map[str, int], int] showLines(loc projectloc){
+public tuple[map[str, int], int,str] showLines(loc projectloc){
 	map[str,int] projectVolumeValues = countProjectLines(findJavaFiles(projectloc));
 	str rank = "";
 	int codeLines = projectVolumeValues["lines"]-(projectVolumeValues["comments"] + projectVolumeValues["emptylines"]+projectVolumeValues["brackets"]);
@@ -46,8 +46,6 @@ public tuple[map[str, int], int] showLines(loc projectloc){
 		rank = "-";
 	}
 	else rank = "--";
-	println("Lines in total: <projectVolumeValues["lines"]>\nLines of pure code: <codeLines>\nLines of comments: <projectVolumeValues["comments"]>\nEmpty Lines: <projectVolumeValues["emptylines"]>\nBrackets: <projectVolumeValues["brackets"]>");
-	println("Rank: <rank>\n");
-	
-	return <projectVolumeValues, codeLines>;
+		
+	return <projectVolumeValues, codeLines,rank>;
 }

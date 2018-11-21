@@ -128,7 +128,7 @@ public str calcRelativeRisk(map[str, int] riskMap, int totalPureLines) {
 	real highPerc 		= (toReal(riskMap["h"]) / (toReal(totalPureLines))) * 100.0;
 	real veryPerc 		= (toReal(riskMap["vh"]) / (toReal(totalPureLines))) * 100.0;
 	
-	println("<veryPerc>,<highPerc>,<moderatePerc>");
+	//println("<veryPerc>,<highPerc>,<moderatePerc>");
 	// Decide what rank the code has according to the paper.
 	if (moderatePerc <= 25 && highPerc == 0 && veryPerc == 0) {
 		return "++";
@@ -171,10 +171,13 @@ public int calcCC(Statement impl) {
     return result;
 }
 
-public void printUnitResults(loc projectloc){
+
+public map[int,str] unitRank(loc projectloc) {
 	int totalPureLines = allUnitLines(projectloc);
+	map[int,str] results = ();
+	results[0] 	= calcRelativeRisk(getCategorizedRisk(riskPerUnitCC(projectloc)), totalPureLines);
+	results[1]	= calcRelativeRisk(getCategorizedRisk(riskPerUnitSize(projectloc)), totalPureLines);
 	
-	println("Complexity Rank: <calcRelativeRisk(getCategorizedRisk(riskPerUnitCC(projectloc)), totalPureLines)>");
-	println("Unit Size Rank: <calcRelativeRisk(getCategorizedRisk(riskPerUnitSize(projectloc)), totalPureLines)>");
-	return;
+	return results;
+	
 }
