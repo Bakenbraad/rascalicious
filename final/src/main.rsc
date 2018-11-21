@@ -14,8 +14,8 @@ import String;
 import demo::common::Crawl;
 
 //public loc projectLoc = |project://test_project|;
-//public loc projectLoc = |project://smallsql0.21_src|;
-public loc projectLoc = |project://hsqldb-2.3.1|;
+public loc projectLoc = |project://smallsql0.21_src|;
+//public loc projectLoc = |project://hsqldb-2.3.1|;
 
 public tuple[map[str, int], int,str] volumeResults 	= showLines(projectLoc);
 public map[int,str]	unitRankingResults 				= unitRank(projectLoc);

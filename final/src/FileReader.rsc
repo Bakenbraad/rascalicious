@@ -6,7 +6,7 @@ import List;
 import Map;
 import String;
 
-public map[str, str] filterCharacters = (" " : "", "\t" : "", "\n" : "");
+public map[str, str] filterCharacters = (" " : "", "\t" : "", "\n" : "", "{" : "", "}" : "");
 
 // Get all java files from a project location.
 public list[loc] findJavaFiles(loc l) {
