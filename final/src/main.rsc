@@ -14,8 +14,8 @@ import String;
 import demo::common::Crawl;
 
 //public loc projectLoc = |project://test_project|;
-//public loc projectLoc = |project://smallsql0.21_src|;
-public loc projectLoc = |project://hsqldb-2.3.1|;
+public loc projectLoc = |project://smallsql0.21_src|;
+//public loc projectLoc = |project://hsqldb-2.3.1|;
 
 public tuple[map[str, int], int,str] volumeResults 	= showLines(projectLoc);
 public map[int,str]	unitRankingResults 				= unitRank(projectLoc);
@@ -44,8 +44,8 @@ public void table(){
 	intRanking["cc"] = strToInt(unitRankingResults[0]);
 	intRanking["unitsize"] = strToInt(unitRankingResults[1]);
 	intRanking["duplication"] = strToInt(codeDuplicationResults[1]);
-	analysability = intToStr((intRanking["volume"]+intRanking["unitsize"])/2);
-	changeability = intToStr(intRanking["cc"]);
+	analysability = intToStr((intRanking["volume"]+intRanking["unitsize"]+intRanking["duplication"])/3);
+	changeability = intToStr((intRanking["cc"]+intRanking["duplication"])/2);
 	testability = intToStr((intRanking["cc"]+intRanking["unitsize"])/2);
 	println("analysability: <analysability>, changeability: <changeability>, testability: <testability>");
 }
