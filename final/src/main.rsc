@@ -33,6 +33,7 @@ public void main(){
 
 	println("Complexity Rank: <unitRankingResults[0]>");
 	println("Unit Size Rank: <unitRankingResults[1]>");
+	println("Unit Interfacing Rank: <unitRankingResults[2]>");
 	table();
 }
 

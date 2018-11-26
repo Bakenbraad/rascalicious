@@ -11,16 +11,23 @@ import String;
 import FileReader;
 
 // Gets all methods as statements from the project.
-public list[Statement] allMethods(loc projectloc){
-	results = [];
+public tuple[list[tuple[int,loc]],list[Statement]] allMethods(loc projectloc){
+	list[Statement] methods = [];
+	list[tuple[int,loc]] parameters 	= [];
 	set[Declaration] decls 		= createAstsFromEclipseProject(projectloc, true);
 	visit(decls){
-		case m: \method(_,_,_,_, Statement s):
-			results += s;
-		case c: \constructor(_,_,_, Statement s):
-			results += s;
+		case m: \method(_,_,list[Declaration] l,_, Statement s):
+			{
+				methods 	+= s;
+				parameters 	+= <size(l),s.src>;
+			}
+		case c: \constructor(_,list[Declaration] l,_, Statement s):
+			{
+				methods 	+= s;
+				parameters 	+= <size(l),s.src>;
+			}
 	}
-	return results; 
+	return <parameters,methods>; 
 }
 
 
@@ -28,7 +35,7 @@ public int allUnitLines(loc projectloc){
 	allStatements = allMethods(projectloc);
 	int allPureLines = 0;
 	
-	for (statement <- allStatements){
+	for (statement <- allStatements[1]){
 		methodLines = countLines(statement.src);
 		pureLines = methodLines["lines"] - (methodLines["comments"] + methodLines["emptylines"]+methodLines["brackets"]);
 		allPureLines += pureLines;
@@ -41,7 +48,7 @@ public int allUnitLines(loc projectloc){
 public list[tuple[int,loc]] calcUnitSize(loc projectloc){
 	allStatements = allMethods(projectloc);
 	list[tuple[int,loc]] unitSize = [];
-	for (statement <- allStatements){
+	for (statement <- allStatements[1]){
 		methodLines = countLines(statement.src);
 		pureLines = methodLines["lines"] - (methodLines["comments"] + methodLines["emptylines"]+ methodLines["brackets"]);
 		sizeLoc = <pureLines,statement.src>;
@@ -82,6 +89,18 @@ public rel[str,loc,int] riskPerUnitSize(loc projectloc){
 	return results;
 }
 
+public rel[str,loc,int] riskPerUnitParameters(loc projectloc){
+	allStatements 	= allMethods(projectloc);
+	int parameters 	= 0;
+	rel[str,loc,int] results = {};
+	list[int] values = [3,5,7];
+	for (statement <- allStatements[0]){
+		parameters = statement[0];
+		loc stateLoc = statement[1];
+		results = calculateRisk(parameters,results,stateLoc,values,false);
+	}
+	return results;
+}
 
 // Generate the CC for each of the methods and return a map of all methods (units) and their CC
 public rel[str, loc, int] riskPerUnitCC(loc projectloc) {
@@ -91,7 +110,7 @@ public rel[str, loc, int] riskPerUnitCC(loc projectloc) {
 	rel[str,loc,int] results = {};
 	list[int] values = [10,20,50];
 	
-	for (statement <- allStatements){
+	for (statement <- allStatements[1]){
 		cc = calcCC(statement);
 		loc stateLoc = statement.src;
 		results = calculateRisk(cc,results,stateLoc,values,false);
@@ -177,6 +196,7 @@ public map[int,str] unitRank(loc projectloc) {
 	map[int,str] results = ();
 	results[0] 	= calcRelativeRisk(getCategorizedRisk(riskPerUnitCC(projectloc)), totalPureLines);
 	results[1]	= calcRelativeRisk(getCategorizedRisk(riskPerUnitSize(projectloc)), totalPureLines);
+	results[2]	= calcRelativeRisk(getCategorizedRisk(riskPerUnitParameters(projectloc)), totalPureLines);
 	
 	return results;
 	
