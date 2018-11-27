@@ -37,7 +37,7 @@ public void main(){
 	table();
 }
 
-//TODO: Do we add duplication to any of the analysability/changeability/testability metrics.
+//analysability/changeability/testability metrics.
 public void table(){
 	map[str,int] intRanking = ();
 		

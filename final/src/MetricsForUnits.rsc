@@ -93,7 +93,7 @@ public rel[str,loc,int] riskPerUnitParameters(loc projectloc){
 	allStatements 	= allMethods(projectloc);
 	int parameters 	= 0;
 	rel[str,loc,int] results = {};
-	list[int] values = [3,5,7];
+	list[int] values = [2,4,7];
 	for (statement <- allStatements[0]){
 		parameters = statement[0];
 		loc stateLoc = statement[1];
@@ -143,11 +143,12 @@ public map[str, int] getCategorizedRisk(rel[str, loc, int] riskRelation){
 public str calcRelativeRisk(map[str, int] riskMap, int totalPureLines) {	
 	
 	// Calculate the percentages of the total code per category.
+	real lowPerc 	= (toReal(riskMap["l"]) / (toReal(totalPureLines))) * 100.0;
 	real moderatePerc 	= (toReal(riskMap["m"]) / (toReal(totalPureLines))) * 100.0;
 	real highPerc 		= (toReal(riskMap["h"]) / (toReal(totalPureLines))) * 100.0;
 	real veryPerc 		= (toReal(riskMap["vh"]) / (toReal(totalPureLines))) * 100.0;
 	
-	//println("<veryPerc>,<highPerc>,<moderatePerc>");
+	//println("<veryPerc>,<highPerc>,<moderatePerc>,<lowPerc>");
 	// Decide what rank the code has according to the paper.
 	if (moderatePerc <= 25 && highPerc == 0 && veryPerc == 0) {
 		return "++";
