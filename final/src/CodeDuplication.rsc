@@ -13,7 +13,12 @@ import Map;
 import String;
 import FileReader;
 
-public map[int, tuple[loc, str]] linesToLocMap(loc location){
+alias fileLineMap			= map[int, tuple[loc, str]];
+alias duplicationMap 		= map[str, list[loc]];
+alias duplicationAreaMap 	= map[tuple[str, str], list[tuple[tuple[loc, loc], int, str]]];
+alias blockPair 			= tuple[tuple[loc, loc], int, str];
+
+public fileLineMap linesToLocMap(loc location){
 	
 	int multiLineComment 	= 0;
 	int linesCount 			= 0;
@@ -38,7 +43,7 @@ public map[int, tuple[loc, str]] linesToLocMap(loc location){
 	return results;
 }
 
-public map[str, list[loc]] generateAggregates(loc location, map[str, list[loc]] results) {
+public duplicationMap generateAggregates(loc location, duplicationMap results) {
 
 	locMap 		= linesToLocMap(location);
 	locMapSize 	= size(locMap);
@@ -89,7 +94,7 @@ public map[str, list[loc]] generateAggregates(loc location, map[str, list[loc]] 
 	return results;
 }
 
-public map[str, list[loc]] saveBlock(map[str, list[loc]] results, str block, loc location){
+public duplicationMap saveBlock(duplicationMap results, str block, loc location){
 	
 	if (block in results) {				
 		results[block] = [location] + results[block];
@@ -123,8 +128,8 @@ public tuple[int,str,real] showCodeDuplication(loc location, map[str,int] projec
 		
 	return <duplicatedLines, rank, duplicationPercentage>;
 }
-public map[tuple[str, str], list[tuple[tuple[loc, loc], int, str]]] expandBlocks(map[str, list[loc]] results){
-	map[tuple[str, str], list[tuple[tuple[loc, loc], int, str]]] duplicateAreas = ();
+public duplicationAreaMap expandBlocks(duplicationMap results){
+	duplicationAreaMap duplicateAreas = ();
 	
 	for (occurrance <- results) {	
 		if (size(results[occurrance]) > 1){
@@ -167,7 +172,7 @@ public map[tuple[str, str], list[tuple[tuple[loc, loc], int, str]]] expandBlocks
 }
 public int getProjectCodeDuplication(loc projectloc, int printMode) {
 
-	map[str, list[loc]] results = ();
+	duplicationMap results = ();
 	
 	javaFiles = findJavaFiles(projectloc);
 	for (l <- javaFiles) {
@@ -175,7 +180,7 @@ public int getProjectCodeDuplication(loc projectloc, int printMode) {
 	}
 		
 	// Expand the duplications found in all the files.
-	map[tuple[str, str], list[tuple[tuple[loc, loc], int, str]]] duplicateAreas = expandBlocks(results);
+	duplicationAreaMap duplicateAreas = expandBlocks(results);
 	map[tuple[str,int],list[loc]] finalDuplication = ();
 	duplicatedLines = 0;
 	
@@ -215,7 +220,7 @@ public bool isSubLocOf(loc l, loc superloc) {
 	return false;
 }
 
-public tuple[tuple[loc, loc], int, str] tryExpandBlockPair(tuple[tuple[loc, loc], int, str] pair) {
+public blockPair tryExpandBlockPair(blockPair pair) {
 
 	nextRelLine1 = getNextRelevantLine(pair[0][0]);
 	nextRelLine2 = getNextRelevantLine(pair[0][1]);
@@ -244,9 +249,9 @@ public loc addLineToLoc(loc l, loc nl) {
 }
 
 // Generate all block combinations we need to explore.
-public lrel[tuple[loc, loc], int, str] dupCombinations(list[loc] ls, str block) {
+public list[blockPair] dupCombinations(list[loc] ls, str block) {
 
-	lrel[tuple[loc, loc], int, str] res = [];
+	list[blockPair] res = [];
 	int s = size(ls);
 	for (i <- [0..s]) {
 		for (j <- [0..s]) {
