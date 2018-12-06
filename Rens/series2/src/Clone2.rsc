@@ -2,7 +2,6 @@ module Clone2
 import lang::java::m3::Core;
 import lang::java::m3::AST;
 import lang::java::jdt::m3::Core;
-import lang::java::jdt::m3::Core;
 import lang::java::jdt::m3::AST;
 import util::Math;
 import IO;
@@ -10,10 +9,11 @@ import List;
 import String;
 import demo::common::Crawl;
 import Node;
+import JSONFormatter;
+import SubClassFiltering;
 
 alias subTreeMap 	= map[node, list[loc]];
 alias cloneClass 	= tuple[node, list[loc]];
-alias filePair 		= tuple[loc, loc];
 
 //public loc projectLoc = |project://smallsql0.21_src|;
 public loc projectLoc = |project://test_project|;
@@ -81,7 +81,7 @@ public subTreeMap addSubTreeToRes(node n, subTreeMap results) {
 	return results;
 }
 
-public list[cloneClass] findCloneClasses() {
+public list[cloneClass] findCloneClasses(loc projectLoc) {
 
 	renamedASTs = getRenamedFileASTs(projectLoc);
 	subTreeMap results = ();
@@ -101,107 +101,18 @@ public list[cloneClass] findCloneClasses() {
 	filteredResults = filterSubClones(getCloneClasses(results, false));
 	filteredCloneClasses = getCloneClasses(filteredResults, true);
 	
-	println(size(filteredCloneClasses));
 	return filteredCloneClasses;
 }
 
-public subTreeMap filterSubClones(list[cloneClass] cloneClasses) {
-
-	cloneClassesPerFilePair = createCloneClassesPerFilePair(cloneClasses);
-	subTreeMap filteredNodes = ();
+public void main() {
+	cloneClasses = findCloneClasses(projectLoc);
 	
-	for (fp <- cloneClassesPerFilePair) {
-		allCloneClassesInFilePair = cloneClassesPerFilePair[fp];
-		for (cC <- allCloneClassesInFilePair) {
-			if (!isSubLocOfAny(cC, allCloneClassesInFilePair)) {
-				locs = cC[1];
-				if (cC[0] in filteredNodes) {
-					filteredNodes[(cC[0])] += locs[0];
-				} else {
-					filteredNodes[(cC[0])] = [locs[0]];
-				}
-				filteredNodes[cC[0]] += locs[1];
-			}
-		}
-	}
+	createCloneClassJSON(cloneClasses);
 	
-	return filteredNodes;
+	// TODO: Count the lines of the nodes and calculate percentage.
+	return;
 }
 
-public bool isSubLocOfAny(cloneClass cC, list[cloneClass] allCloneClassesInFilePair) {
-	
-	cClocs = cC[1];
-	cCOneLoc = cClocs[0];
-	cCTwoLoc = cClocs[1];
-	
-	for (superCC <- allCloneClassesInFilePair) {
-		if (cC != superCC) {
-			
-			superCCLocs = superCC[1];
-			superCCOneLoc = superCCLocs[0];
-			superCCTwoLoc = superCCLocs[1];
-			
-			if (isSubLocOf(cCOneLoc, superCCOneLoc) && isSubLocOf(cCTwoLoc, superCCTwoLoc)) {
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-public bool isSubLocOf(loc l, loc superloc) {
-	if (l.offset >= superloc.offset && l.offset + l.length <= superloc.offset + superloc.length) {
-		return true;
-	}
-	return false;
-}
-
-public map[filePair, list[cloneClass]] createCloneClassesPerFilePair(list[cloneClass] cloneClasses) {
-	
-	map[filePair, list[cloneClass]] cloneClassPerFile = ();
-	for (cC <- cloneClasses) {
-		cloneLocs = cC[1];
-		locCombinations = getLocCombinations(cloneLocs);
-		cloneClassPerFile = insertCloneClassPerFile(locCombinations, cC, cloneClassPerFile);		
-	}
-	return cloneClassPerFile;
-}
-
-public map[filePair, list[cloneClass]] insertCloneClassPerFile(lrel[loc,loc] locCombinations, cloneClass cC, map[filePair, list[cloneClass]] cloneClassPerFile) {
-
-	for (lc <- locCombinations) {
-	
-		loc1 = toLocation(lc[0].uri);
-		loc2 = toLocation(lc[1].uri);
-		
-		if (<loc1, loc2> in cloneClassPerFile) {
-			cloneClassPerFile[<loc1, loc2>] += <cC[0], [lc[0],lc[1]]>;
-		} else if (<loc2, loc1> in cloneClassPerFile) {
-			cloneClassPerFile[<loc2, loc1>] += <cC[0], [lc[1],lc[0]]>;
-		} else {
-			cloneClassPerFile[<loc1, loc2>] = [<cC[0], [lc[0],lc[1]]>];
-		}
-	}
-	return cloneClassPerFile;
-}
-
-public list[tuple[loc, loc]] getLocCombinations(list[loc] locs) {
-	
-	res = [];
-	
-	locSize = size(locs);
-	n = 1;
-	
-	if (locSize >= 2) {
-		for (l <- locs) {
-			for (i <- [n..locSize]) {
-				res += <l, locs[i]>;
-			}
-			n += 1;
-		}
-	}
-	return res;
-}
 
 //TODO: filter subpairs of clones.
 
