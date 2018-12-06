@@ -9,11 +9,12 @@ import IO;
 import List;
 import String;
 import demo::common::Crawl;
+import Node;
 
 alias subTreeMap = map[node, list[loc]];
 
-public loc projectLoc = |project://smallsql0.21_src|;
-//public loc projectLoc = |project://test_project|;
+//public loc projectLoc = |project://smallsql0.21_src|;
+public loc projectLoc = |project://test_project|;
 
 //http://leodemoura.github.io/files/ICSM98.pdf
 public int massThreshold = 10;
@@ -49,58 +50,51 @@ public loc getNodeLoc(node n) {
 	return projectLoc;
 }
 
+public list[tuple[str, list[loc]]] getCloneClasses(subTreeMap st) {
 
-
-public tuple[list[node], list[loc]] getCloneClasses(subTreeMap st) {
+	cloneClasses = [];
+	
 	for (clone <- st) {
-		if (size(st[clone]) > 1) {
-			return <[clone], st[clone]>;
+		if (size(st[clone]) > 1) {			
+			cloneClasses += <"test", st[clone]>;
 		}
 	}
-	return <[], []>;
+	return cloneClasses;
 }
 
-public map[node, list[loc]] addSubTreeToRes(node n, map[node, list[loc]] results) {
+public subTreeMap addSubTreeToRes(node n, subTreeMap results) {
 
 	nodeLoc = getNodeLoc(n);
+	cleanNode = unsetRec(n);
 	if (nodeLoc != |unknown:///|) {
-		if(n in results) {
-			results[n] += nodeLoc;
+		if(cleanNode in results) {
+			results[cleanNode] += nodeLoc;
 		} else {
-			results[n] = [nodeLoc];
+			results[cleanNode] = [nodeLoc];
 		}
 	}	
 	return results;
 }
 
-public node getSingleNode() {
+public list[tuple[str, list[loc]]] findCloneClasses() {
+
 	renamedASTs = getRenamedFileASTs(projectLoc);
-	loc l;
+	subTreeMap results = ();
+
 	for (fileAST <- renamedASTs) {
 	
 		visit(fileAST) {
 			case node n:{
-				l = projectLoc;
-				if (calcNodeMass(n) == 10) {
-					switch (n) {
-						case Declaration d:
-							l = (d.src);
-						case Expression e:
-							l = (e.src);
-						case Statement s:
-							l = (s.src);
-					}
-					if(n in results) {
-						results[n] += l;
-					} else {
-						results[n] = [l];
-					}
-					return results;
+				loc l = projectLoc;
+				if (calcNodeMass(n) >= massThreshold) {
+					results = addSubTreeToRes(n, results);
 				}	
 			}		
 		}
 	}
-	return results;
+	cloneClasses = getCloneClasses(results);
+	
+	return cloneClasses;
 }
 public tuple[list[node], list[loc]] getASingleClone() {
 	
