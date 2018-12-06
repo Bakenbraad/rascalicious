@@ -10,9 +10,13 @@ import List;
 import String;
 import demo::common::Crawl;
 
+alias subTreeMap = map[node, list[loc]];
 
 public loc projectLoc = |project://smallsql0.21_src|;
 //public loc projectLoc = |project://test_project|;
+
+//http://leodemoura.github.io/files/ICSM98.pdf
+public int massThreshold = 10;
 
 
 // Get all java files from a project location.
@@ -32,9 +36,120 @@ public list[Declaration] getRenamedFileASTs(loc projectLoc) {
 	return fileASTs;
 }
 
-public Declaration main() {
-	renamedAST = getRenamedFileASTs(projectLoc);
-	return renamedAST[2];
+public loc getNodeLoc(node n) {
+
+	switch (n) {
+		case Declaration d:
+			return d.src;
+		case Expression e:
+			return e.src;
+		case Statement s:
+			return s.src;
+	}
+	return projectLoc;
+}
+
+
+
+public tuple[list[node], list[loc]] getCloneClasses(subTreeMap st) {
+	for (clone <- st) {
+		if (size(st[clone]) > 1) {
+			return <[clone], st[clone]>;
+		}
+	}
+	return <[], []>;
+}
+
+public map[node, list[loc]] addSubTreeToRes(node n, map[node, list[loc]] results) {
+
+	nodeLoc = getNodeLoc(n);
+	if (nodeLoc != |unknown:///|) {
+		if(n in results) {
+			results[n] += nodeLoc;
+		} else {
+			results[n] = [nodeLoc];
+		}
+	}	
+	return results;
+}
+
+public node getSingleNode() {
+	renamedASTs = getRenamedFileASTs(projectLoc);
+	loc l;
+	for (fileAST <- renamedASTs) {
+	
+		visit(fileAST) {
+			case node n:{
+				l = projectLoc;
+				if (calcNodeMass(n) == 10) {
+					switch (n) {
+						case Declaration d:
+							l = (d.src);
+						case Expression e:
+							l = (e.src);
+						case Statement s:
+							l = (s.src);
+					}
+					if(n in results) {
+						results[n] += l;
+					} else {
+						results[n] = [l];
+					}
+					return results;
+				}	
+			}		
+		}
+	}
+	return results;
+}
+public tuple[list[node], list[loc]] getASingleClone() {
+	
+	renamedASTs = getRenamedFileASTs(projectLoc);
+	
+	subTreeMap results = ();
+	
+	for (fileAST <- renamedASTs) {
+		visit(fileAST) {
+			case node n: {
+				if (calcNodeMass(n) == 10) {
+					l = projectLoc;
+					println(n);
+					switch (n) {
+						case Declaration d:
+							l = d.src;
+						case Expression e:
+							l = e.src;
+						case Statement s:
+							l = s.src;
+					}
+					if(n in results) {
+						results[n] += l;
+					} else {
+						results[n] = [l];
+					}
+				}	
+			}		
+		}
+	}
+	
+	aSingleClone = getCloneClasses(results);
+	
+	return aSingleClone;
+}
+
+//TODO: generate all clone pairs and classes and output them in a textual way.
+
+// To avoid comparison of small trees and reduce the search space monumentally calculate a mass.
+// The mass is the amount of subnodes of a node.
+public int calcNodeMass(node n) {
+
+	int mass = 0;
+	
+	visit (n) {
+		case node sn:
+			mass += 1;
+	}
+	return mass;
 }
 
 public Declaration renameDecls(loc fileLoc){
@@ -57,8 +172,8 @@ public Declaration renameDecls(loc fileLoc){
 		case \methodCall(x, y, _, z) 		=> \methodCall(x, y, "methodCall", z) 
 		case \simpleName(_) 				=> \simpleName("simpleName")
 		case \stringLiteral(_)				=> \stringLiteral("string")
-		case \characterLiteral(_)			=> \stringLiteral("s")
-		case \booleanLiteral(_)				=> \stringLiteral(true)
+		case \characterLiteral(_)			=> \characterLiteral("s")
+		case \booleanLiteral(_)				=> \booleanLiteral(true)
 		case \number(_) 					=> \number("0")
 		case \variable(x,y) 				=> \variable("variableName",y) 
 		case \variable(x,y,z)				=> \variable("variableName",y,z) 	
