@@ -1,4 +1,5 @@
-module Clone2
+module CloneDetection
+
 import lang::java::m3::Core;
 import lang::java::m3::AST;
 import lang::java::jdt::m3::Core;
@@ -19,7 +20,8 @@ alias cloneClass 	= tuple[node, list[loc]];
 public loc projectLoc = |project://test_project|;
 
 //http://leodemoura.github.io/files/ICSM98.pdf
-public int massThreshold = 10;
+public int massThreshold 	= 10;
+public int cloneType 		= 1;
 
 
 // Get all java files from a project location.
@@ -29,12 +31,23 @@ public list[loc] findJavaFiles(loc l) {
 
 public list[Declaration] getRenamedFileASTs(loc projectLoc) {
 	
-	allProjectFiles = findJavaFiles(projectLoc);
-	list[Declaration] fileASTs = [];
+	allProjectFiles 			= findJavaFiles(projectLoc);
+	list[Declaration] fileASTs 	= [];
 	
 	for (file <- allProjectFiles) {
 		AST			= renameDecls(file);
 		fileASTs 	+= AST;
+	}
+	return fileASTs;
+}
+
+public list[Declaration] getFileASTs(loc projectLoc) {
+
+	allProjectFiles 			= findJavaFiles(projectLoc);
+	list[Declaration] fileASTs 	= [];
+	
+	for (file <- allProjectFiles) {
+		fileASTs += createAstFromFile(file, true);;
 	}
 	return fileASTs;
 }
@@ -61,8 +74,7 @@ public list[cloneClass] getCloneClasses(subTreeMap st, bool filtered) {
 			cloneClasses += <clone, dup(st[clone])>;
 		} else if (size(st[clone]) > 1 ) {			
 			cloneClasses += <clone, st[clone]>;
-		}
-		
+		}		
 	}
 	return cloneClasses;
 }
@@ -71,6 +83,7 @@ public subTreeMap addSubTreeToRes(node n, subTreeMap results) {
 
 	nodeLoc = getNodeLoc(n);
 	cleanNode = unsetRec(n);
+	
 	if (nodeLoc != |unknown:///|) {
 		if(cleanNode in results) {
 			results[cleanNode] += nodeLoc;
@@ -83,10 +96,17 @@ public subTreeMap addSubTreeToRes(node n, subTreeMap results) {
 
 public list[cloneClass] findCloneClasses(loc projectLoc) {
 
-	renamedASTs = getRenamedFileASTs(projectLoc);
+	ASTs = [];
+	
+	if (cloneType == 2) {
+		ASTs = getRenamedFileASTs(projectLoc);
+	} else if (cloneType == 1) {
+		ASTs = getFileASTs(projectLoc);
+	}
+	
 	subTreeMap results = ();
 
-	for (fileAST <- renamedASTs) {
+	for (fileAST <- ASTs) {
 	
 		visit(fileAST) {
 			case node n:{
@@ -107,7 +127,7 @@ public list[cloneClass] findCloneClasses(loc projectLoc) {
 public void main() {
 	cloneClasses = findCloneClasses(projectLoc);
 	
-	createCloneClassJSON(cloneClasses);
+	createCloneClassJSON(cloneClasses, cloneType);
 	
 	// TODO: Count the lines of the nodes and calculate percentage.
 	return;

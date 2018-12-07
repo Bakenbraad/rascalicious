@@ -1,6 +1,6 @@
 module JSONFormatter
 
-import Clone2;
+import CloneDetection;
 import IO;
 import List;
 import String;
@@ -13,9 +13,9 @@ import Node;
 
 alias cloneClass 	= tuple[node, list[loc]];
 
-public void createCloneClassJSON(list[cloneClass] cloneClasses){
+public void createCloneClassJSON(list[cloneClass] cloneClasses, int cloneType){
 	
-	jsonString = "{\"<projectLoc>\": ["; 
+	jsonString = "{\"<cloneType>\": ["; 
 	first = true;
 	for (cC <- cloneClasses) {
 	
@@ -30,7 +30,7 @@ public void createCloneClassJSON(list[cloneClass] cloneClasses){
 		}
 	} 
 	jsonString += "] }";
-	return jsonToFile(jsonString); ;
+	return jsonToFile(jsonString, cloneType); ;
 }
 
 public str locListToString(list[loc] locs) {
@@ -49,8 +49,8 @@ public str locListToString(list[loc] locs) {
 	return stringifiedLocs;
 }
 
-public void jsonToFile(str JSON) {
-	str outputLoc = projectLoc.uri + "/clones.json";
+public void jsonToFile(str JSON, int cloneType) {
+	str outputLoc = projectLoc.uri + "/clones_cat<cloneType>.json";
 	writeFile(toLocation(outputLoc), JSON);
 	return;
 }

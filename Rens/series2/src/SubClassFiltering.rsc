@@ -4,7 +4,7 @@ import Node;
 import List;
 import String;
 import IO;
-import Clone2;
+import CloneDetection;
 
 alias subTreeMap 	= map[node, list[loc]];
 alias cloneClass 	= tuple[node, list[loc]];
