@@ -8,26 +8,21 @@ import util::Math;
 import IO;
 import List;
 import String;
-import demo::common::Crawl;
 import Node;
 import JSONFormatter;
 import SubClassFiltering;
+import FileReader;
+import CloneStats;
 
 alias subTreeMap 	= map[node, list[loc]];
 alias cloneClass 	= tuple[node, list[loc]];
 
-//public loc projectLoc = |project://smallsql0.21_src|;
-public loc projectLoc = |project://test_project|;
+public loc projectLoc = |project://smallsql0.21_src|;
+//public loc projectLoc = |project://test_project|;
 
 //http://leodemoura.github.io/files/ICSM98.pdf
-public int massThreshold 	= 10;
+public int massThreshold 	= 14;
 public int cloneType 		= 1;
-
-
-// Get all java files from a project location.
-public list[loc] findJavaFiles(loc l) {
-	return crawl(l, ".java");
-}
 
 public list[Declaration] getRenamedFileASTs(loc projectLoc) {
 	
@@ -71,7 +66,10 @@ public list[cloneClass] getCloneClasses(subTreeMap st, bool filtered) {
 	
 	for (clone <- st) {
 		if (filtered) {
-			cloneClasses += <clone, dup(st[clone])>;
+			cleanCloneList = dup(st[clone]);
+			if (cleanCloneList != [|project://smallsql0.21_src|]) {
+				cloneClasses += <clone, cleanCloneList>;
+			}			
 		} else if (size(st[clone]) > 1 ) {			
 			cloneClasses += <clone, st[clone]>;
 		}		
@@ -125,11 +123,15 @@ public list[cloneClass] findCloneClasses(loc projectLoc) {
 }
 
 public void main() {
+
 	cloneClasses = findCloneClasses(projectLoc);
 	
 	createCloneClassJSON(cloneClasses, cloneType);
 	
-	// TODO: Count the lines of the nodes and calculate percentage.
+	clonePercentage = getClonePercentage(cloneClasses);
+	
+	println("Percentage clones of type <cloneType> with a threshold of <massThreshold>: <clonePercentage> %");
+	
 	return;
 }
 
