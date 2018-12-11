@@ -8,7 +8,7 @@ import util::Math;
 
 alias cloneClass 	= tuple[node, list[loc]];
 
-public real getClonePercentage(list[cloneClass] cloneClasses) {
+public real getClonePercentage(list[cloneClass] cloneClasses, loc projectLoc) {
 	
 	clonedLines 			= 0;
 	totalFunctionalLines 	= calcFunctionalLines(countProjectLines(projectLoc));

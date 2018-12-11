@@ -17,10 +17,13 @@ public void createCloneClassJSON(list[cloneClass] cloneClasses, int cloneType){
 	
 	jsonString = "{\"<cloneType>\": ["; 
 	first = true;
+	cloneCount = 0;
+	
 	for (cC <- cloneClasses) {
 	
 		stringifiedLocs = locListToString(cC[1]);
-		cCName = toString(cC[0]);
+		cloneCount += 1;
+		cCName = "clone<cloneCount>";
 		
 		if (first) {
 			jsonString += "{\"<cCName>\":<stringifiedLocs>}";

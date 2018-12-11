@@ -21,8 +21,8 @@ public loc projectLoc = |project://smallsql0.21_src|;
 //public loc projectLoc = |project://test_project|;
 
 //http://leodemoura.github.io/files/ICSM98.pdf
-public int massThreshold 	= 14;
-public int cloneType 		= 1;
+public int massThreshold 	= 20;
+public int cloneType 		= 2;
 
 public list[Declaration] getRenamedFileASTs(loc projectLoc) {
 	
@@ -92,7 +92,7 @@ public subTreeMap addSubTreeToRes(node n, subTreeMap results) {
 	return results;
 }
 
-public list[cloneClass] findCloneClasses(loc projectLoc) {
+public list[cloneClass] findCloneClasses(loc projectLoc, int cloneType) {
 
 	ASTs = [];
 	
@@ -124,19 +124,16 @@ public list[cloneClass] findCloneClasses(loc projectLoc) {
 
 public void main() {
 
-	cloneClasses = findCloneClasses(projectLoc);
+	cloneClasses = findCloneClasses(projectLoc, cloneType);
 	
 	createCloneClassJSON(cloneClasses, cloneType);
 	
-	clonePercentage = getClonePercentage(cloneClasses);
+	clonePercentage = getClonePercentage(cloneClasses, projectLoc);
 	
 	println("Percentage clones of type <cloneType> with a threshold of <massThreshold>: <clonePercentage> %");
 	
 	return;
 }
-
-
-//TODO: filter subpairs of clones.
 
 // To avoid comparison of small trees and reduce the search space monumentally calculate a mass.
 // The mass is the amount of subnodes of a node.
@@ -170,9 +167,9 @@ public Declaration renameDecls(loc fileLoc){
 		case \methodCall(x, _, z) 			=> \methodCall(x, "methodCall", z)
 		case \methodCall(x, y, _, z) 		=> \methodCall(x, y, "methodCall", z) 
 		case \simpleName(_) 				=> \simpleName("simpleName")
-		case \stringLiteral(_)				=> \stringLiteral("string")
-		case \characterLiteral(_)			=> \characterLiteral("s")
-		case \booleanLiteral(_)				=> \booleanLiteral(true)
+		case \stringLiteral(_)				=> \number("0")
+		case \characterLiteral(_)			=> \number("0")
+		case \booleanLiteral(_)				=> \number("0")
 		case \number(_) 					=> \number("0")
 		case \variable(x,y) 				=> \variable("variableName",y) 
 		case \variable(x,y,z)				=> \variable("variableName",y,z) 	

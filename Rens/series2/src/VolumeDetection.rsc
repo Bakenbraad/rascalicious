@@ -16,7 +16,7 @@ public map[str,int] countProjectLines(loc projectLoc){
 
 	allLocs = findJavaFiles(projectLoc);
 
-map[str,int] values = (
+	map[str,int] values = (
 					"lines" 		: 0,
 					"comments" 		: 0,
 					"emptylines" 	: 0, 
