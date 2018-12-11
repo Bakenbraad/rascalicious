@@ -22,7 +22,7 @@ public loc projectLoc = |project://smallsql0.21_src|;
 
 //http://leodemoura.github.io/files/ICSM98.pdf
 public int massThreshold 	= 20;
-public int cloneType 		= 2;
+public int cloneType 		= 1;
 
 public list[Declaration] getRenamedFileASTs(loc projectLoc) {
 	
