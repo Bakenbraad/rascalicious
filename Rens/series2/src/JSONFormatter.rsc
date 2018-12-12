@@ -50,6 +50,9 @@ public map[str, list[str]] createFileRelations(list[cloneClass] cloneClasses, in
 				clonesPerFile[filterToDataFormat(cCLocs[i].uri, projectLoc)] = locsToJSONUris(cCLocs - cCLocs[i], projectLoc);
 				clonesPerFile[filterToDataFormat(cCLocs[i].uri, projectLoc)] = dup(clonesPerFile[filterToDataFormat(cCLocs[i].uri, projectLoc)]);
 			}			
+			if ( filterToDataFormat(cCLocs[i].uri, projectLoc) in locsToJSONUris(cCLocs - cCLocs[i], projectLoc)) {
+				println(locsToJSONUris(cCLocs - cCLocs[i], projectLoc));
+			}
 		}		
 	}
 	return clonesPerFile;
