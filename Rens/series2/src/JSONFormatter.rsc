@@ -13,30 +13,66 @@ import Node;
 
 alias cloneClass = tuple[node, list[loc]];
 
-public void createCloneClassJSON(list[cloneClass] cloneClasses, int cloneType){
-	
-	jsonString = "{\"<cloneType>\": ["; 
-	first = true;
-	cloneCount = 0;
-	
+map[str, str] invalidJSON = ("\\": " ", "\"" : "\'");
+
+public void createFileNameToNodesJSON(list[cloneClass] cloneClasses, loc projectLoc) {
+
+	map[str, list[str]] fileNameToNodes = (); 
 	for (cC <- cloneClasses) {
+		for (cloneLoc <- cC[1]) {
+			fileName = filterToDataFormat(cloneLoc.uri, projectLoc);
+			if(fileName in fileNameToNodes) {
+				fileNameToNodes[fileName] += escape(toString(cC[0]),invalidJSON);
+			} else {
+				fileNameToNodes[fileName] = [escape(toString(cC[0]),invalidJSON)];
+			}
+		}	
+	}	
+	JSONMap = "{\"fileNameToNodes\": [";
 	
-		stringifiedLocs = locListToString(locsToJSONUris(cC[1]));
-		cloneCount += 1;
-		cCName = "clone<cloneCount>";
-		
+	first = true;
+	
+	for (fn <- fileNameToNodes) {		
 		if (first) {
-			jsonString += "{\"<cCName>\":<stringifiedLocs>}";
+			JSONMap += "{\"<fn>\":<locListToString(fileNameToNodes[fn])>}";
 			first = false;
 		} else {
-			jsonString += ",{\"<cCName>\":<stringifiedLocs>}";
+			JSONMap += ",{\"<fn>\":<locListToString(fileNameToNodes[fn])>}";
 		}
 	} 
-	jsonString += "] }";
-	return jsonToFile(jsonString, cloneType); ;
+	JSONMap += "] }";
+	jsonToFile(JSONMap, "fileNameToNodes");
 }
 
-public tuple[map[str, list[str]], map[str,str]] createFileRelations(list[cloneClass] cloneClasses, int cloneType, loc projectLoc) {
+
+public str formatJSONMap(list[cloneClass] cloneClasses, str mapName, loc projectLoc) {
+
+	JSONMap = "{\"<mapName>\": [";
+	
+	first = true;
+	
+	for (cC <- cloneClasses) {	
+	
+		stringifiedLocs = locListToString(locsToJSONUris(cC[1], projectLoc));
+		
+		if (first) {
+			JSONMap += "{\"<escape(toString(cC[0]),invalidJSON)>\":<stringifiedLocs>}";
+			first = false;
+		} else {
+			JSONMap += ",{\"<escape(toString(cC[0]),invalidJSON)>\":<stringifiedLocs>}";
+		}
+	} 
+	JSONMap += "] }";
+	return JSONMap;
+}
+
+public void createNodeToLocsJSON(list[cloneClass] cloneClasses, loc projectLoc){
+	
+	nodeToLocsJSON = formatJSONMap(cloneClasses, "nodeToLocsJSON", projectLoc);
+	jsonToFile(nodeToLocsJSON, "nodeToLocs");
+}
+
+public tuple[map[str, list[str]], map[str,str]] createFileRelations(list[cloneClass] cloneClasses, loc projectLoc) {
 	
 	map[str, list[str]] clonesPerFile = ();
 	map[str, str] originalFileNames = ();
@@ -61,7 +97,7 @@ public str clonesPerFileToJSON(map[str, list[str]] clonesPerFile, map[str, str] 
 
 	outputString = "[{";
 	for (file <- clonesPerFile) {
-		outputString += "\"link\" : \"<originalFileNames[file]>\",\"name\" : \"<file>\", \"imports\" : ";
+		outputString += "\"filename\" : \"<file>\", \"locs\" : ";
 		outputString += locListToString(clonesPerFile[file]);
 		outputString += "},{";
 	}
@@ -104,8 +140,8 @@ public str locListToString(list[str] locs) {
 	return stringifiedLocs;
 }
 
-public void jsonToFile(str JSON, int cloneType) {
-	str outputLoc = projectLoc.uri + "/data_cat<cloneType>.json";
+public void jsonToFile(str JSON, str outputName) {
+	str outputLoc = projectLoc.uri + "/<outputName>.json";
 	writeFile(toLocation(outputLoc), JSON);
 	return;
 }

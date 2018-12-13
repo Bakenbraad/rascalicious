@@ -16,15 +16,31 @@
 
 </style>
 <body>
+<h2>Clones</h2>
+<button type="button" onclick="switchCat()">Switch category</button>
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
+
+	function switchCat() {
+		if (data_origin == "data_cat1") {
+			data_origin = "data_cat2";
+		} else {
+			data_origin = "data_cat1";
+		}
+		//location.reload();
+		var url_string = window.location.href; //window.location.href
+		var url = new URL(url_string);
+		var c = url.searchParams.get("cat");
+		console.log(c);
+	}
 
 	var diameter = 960,
 		radius = diameter / 2,
 		innerRadius = radius - 120,
 		m0,
 		pi = Math.PI;
-		selectedNode = {};
+		selectedNode = {},
+		data_origin = "data_cat1";
 	
 	var cluster = d3.cluster()
 		.size([360, innerRadius]);
@@ -43,7 +59,7 @@
 	var link = svg.append("g").selectAll(".link"),
 		node = svg.append("g").selectAll(".node");
 		
-	d3.json("data_cat1.json", function(error, classes) {
+	d3.json((data_origin + ".json"), function(error, classes) {
 		if (error) throw error;
 		
 		var root = packageHierarchy(classes)
