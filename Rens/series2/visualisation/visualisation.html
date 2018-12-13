@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<style>
+.node {
+  font: 10px sans-serif;
+  fill: black;
+}
+
+.link {
+  fill: none;
+  pointer-events: none;
+}
+
+.node:hover {
+  fill: navy;
+}
+
+.clonevisualisation {
+	position: absolute;
+	left: 0px;
+	width: 80%;
+}
+
+.cloneinfo {
+	border: solid 2px black;
+	position: fixed;
+	right: 0px;
+	top: 0px;
+	width: 20%;
+	height: 75%;
+	overflow-y: scroll;
+	padding: 50px;
+	margin: 30px;
+}
+
+.collapsible {
+  background-color: black;
+  color: white;
+  cursor: pointer;
+  padding: 18px;
+  margin-top: 5px;
+  border: solid 1px grey;
+  width: 100%;
+  text-align: center;
+  outline: none;
+  font-size: 20px;
+}
+
+.active, .collapsible:hover {
+  background-color: grey;
+}
+
+.content {
+  padding: 13px;
+  display: none;
+  overflow: hidden;
+  background-color: #f1f1f1;
+}
+
+.urllink {
+	width: 100%;
+	right: 0px;
+	color: black;
+	font: 20px sans-serif;
+	text-decoration: none;
+}
+
+.urllink:hover {
+	color: blue;
+}
+
+</style>
+<body>
+<div id="clonevis" class="clonevisualisation">	
+</div>
+<div id="cloneList" class="cloneinfo">
+</div>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+
+	var diameter 		= 1200,
+		radius 			= diameter / 2,
+		innerRadius 	= radius - 120,
+		m0,
+		pi 				= Math.PI;
+		selectedNode 	= {},
+		filenameToNodes = {},
+		nodesToLocations= {},
+		nodeToLocs		= {},
+		windowloc 		= window.location.href.split("/").slice(0, -1).join('/');
+	
+	/*
+		Functions for creating lists of clone class visualisations.
+	*/
+	
+	function makeCloneCollapsible(array) {
+	
+		var div = document.createElement('div'),
+			collapsible,
+			content,
+			arraysize = array.length;
+			
+		for (i = 0; i < arraysize; i++) {
+		
+			// Create a button with clone number.
+			collapsible = document.createElement('button')
+			collapsible.className = "collapsible";
+			collapsible.innerHTML = "Clone number " + String((i + 1)) + " occurs in " + String(uniq(array[i]).length) + " file(s)";
+			 
+			// Content below button is the corresponding occurrance locations.
+			content = document.createElement('div');
+			content.className = "content";
+			content.appendChild(makeOccurranceList(array[i]));	
+			
+			// Append the new elements in order to the div.
+			div.appendChild(collapsible);
+			div.appendChild(content);
+		}
+		
+		return div;
+	}
+	
+	// Source: https://stackoverflow.com/questions/9229645/remove-duplicate-values-from-js-array
+	// This is just a dup function for js arrays.
+	function uniq(a) {
+		return a.sort().filter(function(item, pos, ary) {
+			return !pos || item != ary[pos - 1];
+		})
+	}
+	
+	function makeOccurranceList(array) {
+    // Create the list element:
+		var list = document.createElement('div');
+			arraysize = array.length;
+		
+		for (var i = 0; i < arraysize; i++) {
+			// Set its contents:
+			var urllink = document.createElement('a');
+			urllink.className = "urllink";
+			
+			urllink.href =  windowloc + array[i];
+			urllink.innerHTML = array[i].split("/").pop();
+			list.appendChild(urllink);
+			list.appendChild(document.createElement('br'));
+		}
+		// Finally, return the constructed list:
+		return list;
+	}
+	
+	function setCollapsibleListeners() {
+		var coll = document.getElementsByClassName("collapsible");
+		var i;
+
+		for (i = 0; i < coll.length; i++) {
+			coll[i].addEventListener("click", function() {
+				this.classList.toggle("active");
+				var content = this.nextElementSibling;
+				console.log(content);
+				if (content.style.display === "block") {
+					content.style.display = "none";
+				} else {
+					content.style.display = "block";
+				}
+			});
+		}
+	}
+	
+	/*
+		Functions for creating the datamaps from json.
+	*/
+	
+	function getFilenameToNodes(classes) {
+		var map 			= {},
+			filenameLength 	= classes.fileNameToNodes.length;
+			
+		for( i = 0; i < filenameLength; i++){
+			var obj = classes.fileNameToNodes[i];
+				map[obj.filename] = obj.nodes;
+			}
+		return map;
+		}
+
+	
+	d3.json("nodeToLocs.json", function(error, classes) {
+		if (error) throw error;
+		
+		nodesToLocations = getNodeToLocs(classes);			
+	});
+	
+	function getNodeToLocs(classes) {
+		var map 			= {},
+			filenameLength 	= classes.nodeToLocsJSON.length;
+		for(i = 0; i < filenameLength; i++){
+			var obj = classes.nodeToLocsJSON[i];
+				map[obj.node] = obj.locs;
+			}
+		return map;
+	}
+	
+		function getFileCloneClasses(d) { 
+		var clonedNodes = filenameToNodes[d.data.filename],
+			clones = {},
+			i;
+		
+		for ( i = 0; i < clonedNodes.length; i++) {
+			nodeString = clonedNodes[i];
+			cloneLocs = nodesToLocations[nodeString];
+			clones[i] = cloneLocs;
+		}
+		clones.length = i;
+		return clones;
+	}
+	
+	d3.json("fileNameToNodes.json", function(error, classes) {
+		if (error) throw error;
+		
+		filenameToNodes = getFilenameToNodes(classes);
+	});
+	
+		// Lazily construct the package hierarchy from class names.
+	function packageHierarchy(classes) {
+		var map = {};
+		function find(filename, data) {
+			var node = map[filename], i;
+			if (!node) {
+				node = map[filename] = data || {filename: filename, children: []};
+				if (filename.length) {
+					node.parent = find(filename.substring(0, i = filename.lastIndexOf(".")));
+					node.parent.children.push(node);
+					node.key = filename.substring(i + 1);
+				}
+			}
+			return node;
+		}
+	
+		classes.forEach(function(d) {
+			find(d.filename, d);
+		});
+		
+		return d3.hierarchy(map[""]);
+	}
+	
+	// Return a list of imports for the given array of nodes.
+	function packageLocations(nodes) {
+	
+		var map = {},
+		locs = [];
+		
+		// Compute a map from name to node.
+		nodes.forEach(function(d) {
+			map[d.data.filename] = d;
+		});
+		
+		// For each import, construct a link from the source to target node.
+		nodes.forEach(function(d) {
+			if (d.data.locs) d.data.locs.forEach(function(i) {
+				locs.push(map[d.data.filename].path(map[i]));
+			});
+		});
+	
+		return locs;
+	}	
+		
+	/*
+		Functions for creating the radial dendogram visualisation.
+	*/
+	
+	var cluster = d3.cluster()
+		.size([360, innerRadius]);
+		
+	var line = d3.radialLine()
+		.curve(d3.curveBundle.beta(0.85))
+		.radius(function(d) { return d.y; })
+		.angle(function(d) { return d.x / 180 * Math.PI; });
+		
+	var svg = d3.select("#clonevis").append("svg")
+		.attr("width", diameter)
+		.attr("height", diameter)
+		.append("g")
+		.attr("transform", "translate(" + radius + "," + radius + ")")
+		
+	var link = svg.append("g").selectAll(".link"),
+		node = svg.append("g").selectAll(".node");
+		
+	d3.json("fileRelations_cat1.json", function(error, classes) {
+		if (error) throw error;
+		
+		var root = packageHierarchy(classes)
+			.sum(function(d) { return d.size; });
+			
+		cluster(root);
+		
+		link = link		
+			.data(packageLocations(root.leaves()))
+			.enter().append("path")
+			.each(function(d) {
+				d.source = d[0];
+				d.target = d[d.length-1];
+			})
+			.attr("style","stroke : blue; stroke-opacity: 0.5; stroke-width: 0.5px;")
+			.attr("class", "link")
+			.attr("id", function(d) { return "source-" + d.source.data.filename + " target-" + d.target.data.filename;})
+			.attr("d", line);
+
+		node = node
+			.data(root.leaves())
+			.enter().append("text")
+			.each(function(d) { d.selected = false;})
+			.attr("text-decoration", function(d) { if(d.data.locs.indexOf(d.data.filename) !== -1) { return "underline" }})
+			.attr("class", "node")
+			.attr("dy", "0.31em")
+			.attr("cursor","pointer")
+			.attr("id", function(d) { return "node-" + d.data.filename; })
+			.attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + (d.y + 8) + ",0)" + (d.x < 180 ? "" : "rotate(180)"); })
+			.attr("text-anchor", function(d) { return d.x < 180 ? "start" : "end"; })
+			.text(function(d) { return d.data.key; })
+			.on("mouseover", mouseover)
+			.on("mouseout", mouseout)
+			.on("click", mouseclick);
+	});
+
+	/*
+		Functions for handeling mouse behaviour.
+	*/
+	
+	function mouse(e) {
+		return [e.pageX - radius, e.pageY - radius];
+	}
+	
+	function mouseclick(d) {
+	
+		var source = d.data.filename,
+			targets = d.data.locs,
+			selected = d.selected;
+			
+		
+		if (selectedNode != d) {
+			if (Object.keys(selectedNode).length !== 0) {				
+				selectedNode.selected = false;
+				mouseout(selectedNode);
+			}			
+			selectedNode = d;
+		}
+		var selectedClones = [];
+		if (selected) {			
+			d.selected = false;
+			mouseout(d);
+		} else {
+			d.selected = true;
+			mouseover(d);		
+			selectedClones = getFileCloneClasses(d);
+		}
+
+		document.getElementById('cloneList').innerHTML = "";
+		document.getElementById('cloneList').appendChild(makeCloneCollapsible(selectedClones));
+		setCollapsibleListeners();
+		
+		return;
+	
+	}
+	
+	function updatePath(source, target, color, opacity, width, textcolor) {
+		document.getElementById("source-" + source + " target-" + target).style.stroke = color;
+		document.getElementById("source-" + source + " target-" + target).style["stroke-opacity"] = opacity; 
+		document.getElementById("source-" + source + " target-" + target).style["stroke-width"] = width + "px";
+		document.getElementById("node-" + target).style.fill = textcolor;
+	}	
+		
+	function mouseover(d) {
+		var source = d.data.filename,
+			targets = d.data.locs;
+			
+		targets.forEach(function(t) { 
+			if (selectedNode.data === undefined || selectedNode.data.filename !== t) {
+				updatePath(source, t, "red", "1", "1.5", "black"); 
+			}			
+			updatePath(t, source, "red", "1", "1.5", "green");
+		});
+			
+	}
+	
+	function mouseout(d) {
+				
+		var source = d.data.filename,
+			targets = d.data.locs;
+			selected = d.selected,
+			keepTextRed = [];
+			
+		if (!selected) {
+			// Check if the current link of node being turned off is not a link of the selected node, they can only be turned off if we are deselecting the selected node.
+			targets.forEach(function(t) { 
+				if(selectedNode.data !== undefined) {
+					if(selectedNode == d || !(selectedNode.data.locs.indexOf(source) !== -1 && selectedNode.data.filename === t )) {
+						updatePath(source, t, "blue", "0.5", "0.5", "black");
+						updatePath(t, source, "blue", "0.5", "0.5", "black");
+					}
+				} else {
+					updatePath(source, t, "blue", "0.5", "0.5", "black");
+					updatePath(t, source, "blue", "0.5", "0.5", "black");
+				}
+			});
+		}		
+	}
+	
+</script>
+<style> 
+
+/*
+	Nicer colors from: https://clrs.cc/ 
+*/
+
+/* Backgrounds */
+.bg-navy { background-color: #001F3F; }
+.bg-blue { background-color: #0074D9; }
+.bg-aqua { background-color: #7FDBFF; }
+.bg-teal { background-color: #39CCCC; }
+.bg-olive { background-color: #3D9970; }
+.bg-green { background-color: #2ECC40; }
+.bg-lime { background-color: #01FF70; }
+.bg-yellow { background-color: #FFDC00; }
+.bg-orange { background-color: #FF851B; }
+.bg-red { background-color: #FF4136; }
+.bg-fuchsia { background-color: #F012BE; }
+.bg-purple { background-color: #B10DC9; }
+.bg-maroon { background-color: #85144B; }
+.bg-white { background-color: #FFFFFF; }
+.bg-gray { background-color: #AAAAAA; }
+.bg-silver { background-color: #DDDDDD; }
+.bg-black { background-color: #111111; }
+
+/* Colors */
+.navy { color: #001F3F; }
+.blue { color: #0074D9; }
+.aqua { color: #7FDBFF; }
+.teal { color: #39CCCC; }
+.olive { color: #3D9970; }
+.green { color: #2ECC40; }
+.lime { color: #01FF70; }
+.yellow { color: #FFDC00; }
+.orange { color: #FF851B; }
+.red { color: #FF4136; }
+.fuchsia { color: #F012BE; }
+.purple { color: #B10DC9; }
+.maroon { color: #85144B; }
+.white { color: #FFFFFF; }
+.silver { color: #DDDDDD; }
+.gray { color: #AAAAAA; }
+.black { color: #111111; }
+
+/* Border colors 
+
+   Use with another border utility that sets border-width and style 
+   i.e .border { border-width: 1px); border-style: solid); }     
+*/
+.border--navy { border-color: #001F3F; }
+.border--blue { border-color: #0074D9; }
+.border--aqua { border-color: #7FDBFF; }
+.border--teal { border-color: #39CCCC; }
+.border--olive { border-color: #3D9970; }
+.border--green { border-color: #2ECC40; }
+.border--lime { border-color: #01FF70; }
+.border--yellow { border-color: #FFDC00; }
+.border--orange { border-color: #FF851B; }
+.border--red { border-color: #FF4136; }
+.border--fuchsia { border-color: #F012BE; }
+.border--purple { border-color: #B10DC9; }
+.border--maroon { border-color: #85144B; }
+.border--white { border-color: #FFFFFF; }
+.border--gray { border-color: #AAAAAA; }
+.border--silver { border-color: #DDDDDD; }
+.border--black { border-color: #111111; }
+
+/* Fills for SVG */
+.fill-navy { fill: #001F3F; }
+.fill-blue { fill: #0074D9; }
+.fill-aqua { fill: #7FDBFF; }
+.fill-teal { fill: #39CCCC; }
+.fill-olive { fill: #3D9970; }
+.fill-green { fill: #2ECC40; }
+.fill-lime { fill: #01FF70; }
+.fill-yellow { fill: #FFDC00; }
+.fill-orange { fill: #FF851B; }
+.fill-red { fill: #FF4136; }
+.fill-fuchsia { fill: #F012BE; }
+.fill-purple { fill: #B10DC9; }
+.fill-maroon { fill: #85144B; }
+.fill-white { fill: #FFFFFF; }
+.fill-gray { fill: #AAAAAA; }
+.fill-silver { fill: #DDDDDD; }
+.fill-black { fill: #111111; }
+
+/* Strokes for SVG */
+.stroke-navy { stroke: #001F3F; }
+.stroke-blue { stroke: #0074D9; }
+.stroke-aqua { stroke: #7FDBFF; }
+.stroke-teal { stroke: #39CCCC; }
+.stroke-olive { stroke: #3D9970; }
+.stroke-green { stroke: #2ECC40; }
+.stroke-lime { stroke: #01FF70; }
+.stroke-yellow { stroke: #FFDC00; }
+.stroke-orange { stroke: #FF851B; }
+.stroke-red { stroke: #FF4136; }
+.stroke-fuchsia { stroke: #F012BE; }
+.stroke-purple { stroke: #B10DC9; }
+.stroke-maroon { stroke: #85144B; }
+.stroke-white { stroke: #FFFFFF; }
+.stroke-gray { stroke: #AAAAAA; }
+.stroke-silver { stroke: #DDDDDD; }
+.stroke-black { stroke: #111111; }
+</style>
+</body>
