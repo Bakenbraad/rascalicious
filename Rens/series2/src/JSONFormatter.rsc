@@ -36,33 +36,32 @@ public void createCloneClassJSON(list[cloneClass] cloneClasses, int cloneType){
 	return jsonToFile(jsonString, cloneType); ;
 }
 
-public map[str, list[str]] createFileRelations(list[cloneClass] cloneClasses, int cloneType, loc projectLoc) {
+public tuple[map[str, list[str]], map[str,str]] createFileRelations(list[cloneClass] cloneClasses, int cloneType, loc projectLoc) {
 	
 	map[str, list[str]] clonesPerFile = ();
+	map[str, str] originalFileNames = ();
 	
 	for (cC <- cloneClasses) {
 		cCLocs = cC[1];
 		for (i <- [0.. size(cCLocs)]) {
-			if (cCLocs[i].uri in clonesPerFile) {
-				clonesPerFile[filterToDataFormat(cCLocs[i].uri, projectLoc)] += locsToJSONUris(cCLocs - cCLocs[i], projectLoc);
-				clonesPerFile[filterToDataFormat(cCLocs[i].uri, projectLoc)] = dup(clonesPerFile[filterToDataFormat(cCLocs[i].uri, projectLoc)]);
+			fileName = filterToDataFormat(cCLocs[i].uri, projectLoc);
+			originalFileNames[fileName] = cCLocs[i].uri;
+			if (fileName in clonesPerFile) {
+				clonesPerFile[fileName] += locsToJSONUris(cCLocs - cCLocs[i], projectLoc);
 			} else {
-				clonesPerFile[filterToDataFormat(cCLocs[i].uri, projectLoc)] = locsToJSONUris(cCLocs - cCLocs[i], projectLoc);
-				clonesPerFile[filterToDataFormat(cCLocs[i].uri, projectLoc)] = dup(clonesPerFile[filterToDataFormat(cCLocs[i].uri, projectLoc)]);
-			}			
-			if ( filterToDataFormat(cCLocs[i].uri, projectLoc) in locsToJSONUris(cCLocs - cCLocs[i], projectLoc)) {
-				println(locsToJSONUris(cCLocs - cCLocs[i], projectLoc));
+				clonesPerFile[fileName] = locsToJSONUris(cCLocs - cCLocs[i], projectLoc);				
 			}
+			clonesPerFile[fileName] = dup(clonesPerFile[fileName]);
 		}		
 	}
-	return clonesPerFile;
+	return <clonesPerFile, originalFileNames>;
 }
 
-public str clonesPerFileToJSON(map[str, list[str]] clonesPerFile) {
+public str clonesPerFileToJSON(map[str, list[str]] clonesPerFile, map[str, str] originalFileNames) {
 
 	outputString = "[{";
 	for (file <- clonesPerFile) {
-		outputString += "\"name\" : \"<file>\", \"imports\" : ";
+		outputString += "\"link\" : \"<originalFileNames[file]>\",\"name\" : \"<file>\", \"imports\" : ";
 		outputString += locListToString(clonesPerFile[file]);
 		outputString += "},{";
 	}
@@ -106,7 +105,7 @@ public str locListToString(list[str] locs) {
 }
 
 public void jsonToFile(str JSON, int cloneType) {
-	str outputLoc = projectLoc.uri + "/clones_cat<cloneType>.json";
+	str outputLoc = projectLoc.uri + "/data_cat<cloneType>.json";
 	writeFile(toLocation(outputLoc), JSON);
 	return;
 }

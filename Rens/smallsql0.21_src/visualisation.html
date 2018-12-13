@@ -5,53 +5,26 @@
   font: 10px sans-serif;
 }
 
-.node:hover {
-  fill: #1f77b4;
-}
-
 .link {
-  stroke: steelblue;
-  stroke-opacity: 0.5;
   fill: none;
   pointer-events: none;
 }
 
-.link.source, .link.target {
-  stroke-opacity: 1;
-  stroke-width: 2px;
+.node:hover {
+  fill: #1f77b4;
 }
 
-.node.target {
-  fill: #000000 !important;
-}
-
-.link.source {
-  stroke: #000000;
-}
-
-.node.source {
-  fill: #000000;
-}
-
-.link.target {
-  stroke: #000000;
-}
 </style>
 <body>
-<div id="bundle"></div>
 <script src="https://d3js.org/d3.v4.min.js"></script>
-<script type="text/javascript" src="//code.jquery.com/jquery-1.12.3.min.js"></script>
 <script>
 
 	var diameter = 960,
 		radius = diameter / 2,
 		innerRadius = radius - 120,
 		m0,
-		rotate = 0,
 		pi = Math.PI;
-		
-	var splines = [],
-		bundle = d3.layout.bundle();
+		selectedNode = {};
 	
 	var cluster = d3.cluster()
 		.size([360, innerRadius]);
@@ -70,7 +43,7 @@
 	var link = svg.append("g").selectAll(".link"),
 		node = svg.append("g").selectAll(".node");
 		
-	d3.json("flare.json", function(error, classes) {
+	d3.json("data_cat1.json", function(error, classes) {
 		if (error) throw error;
 		
 		var root = packageHierarchy(classes)
@@ -78,39 +51,36 @@
 			
 		cluster(root);
 		
-		var nodes = cluster(root),
-		//nodes2 = cluster.nodes(packages.root(classes)
-		links = packageImports(nodes),
-		splines = bundle(links);
-		
+				
 		link = link		
 			.data(packageImports(root.leaves()))
-			.enter().append("svg:path")
+			.enter().append("path")
 			.each(function(d) {
 				d.source = d[0];
 				d.target = d[d.length-1];
 			})
-			.attr("class", function(d) { return "link source-" + d.source.key + " target-" + d.target.key; })
+			.attr("style","stroke : steelblue; stroke-opacity: 0.5; stroke-width: 2px;")
+			.attr("class", "link")
+			.attr("id", function(d) { return "source-" + d.source.data.name + " target-" + d.target.data.name;})
 			.attr("d", line);
 			
-		var path = svg.selectAll("path.link")
-			.data(links)
-			.enter().append("svg:path")
-			.attr("class", function(d) { return "link source-" + d.source.key + " target-" + d.target.key; })
-			.attr("d", function(d, i) { return line(splines[i]); });
-
+		console.log("test");
+		
 		
 		node = node
 			.data(root.leaves())
 			.enter().append("text")
+			.each(function(d) {console.log(window.location); d.selected = false; d.link = d.data.link;})
 			.attr("class", "node")
 			.attr("dy", "0.31em")
+			.attr("cursor","pointer")
 			.attr("id", function(d) { return "node-" + d.key; })
 			.attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + (d.y + 8) + ",0)" + (d.x < 180 ? "" : "rotate(180)"); })
 			.attr("text-anchor", function(d) { return d.x < 180 ? "start" : "end"; })
 			.text(function(d) { return d.data.key; })
 			.on("mouseover", mouseover)
-			.on("mouseout", mouseout);
+			.on("mouseout", mouseout)
+			.on("click", mouseclick);
 	});
 	
 	// Lazily construct the package hierarchy from class names.
@@ -161,41 +131,59 @@
 		return [e.pageX - radius, e.pageY - radius];
 	}
 	
-	var div = d3.select("#bundle")
-		.style("width", diameter + "px")
-		.style("height", diameter + "px")
-		.style("position", "absolute");
+	function mouseclick(d) {
+		var source = d.data.name,
+			targets = d.data.imports,
+			selected = d.selected;
+			
+		
+		if (selectedNode != d) {
+			if (Object.keys(selectedNode).length !== 0) {				
+				selectedNode.selected = false;
+				mouseout(selectedNode);
+			}			
+			selectedNode = d;
+		}
+			
+		if (selected) {			
+			d.selected = false;
+			mouseout(d);
+		} else {
+			d.selected = true;
+			mouseover(d);			
+		}
+		
+	
+	}
+	
+	function updatePath(source, target, color, opacity, width) {
+		document.getElementById("source-" + source + " target-" + target).style.stroke = color;
+		document.getElementById("source-" + source + " target-" + target).style["stroke-opacity"] = opacity; 
+		document.getElementById("source-" + source + " target-" + target).style["stroke-width"] = width + "px";
+		document.getElementById("source-" + target + " target-" + source).style.stroke = color;
+		document.getElementById("source-" + target + " target-" + source).style["stroke-opacity"] = opacity; 
+		document.getElementById("source-" + target + " target-" + source).style["stroke-width"] = width + "px";
+	}
+	
 	
 	function mouseover(d) {
-		console.log(d.data.key);
-		svg.selectAll("path.link.target-" + d.data.key)
-			.classed("target", true)
-			.each(updateNodes("source", true));
-
-		svg.selectAll("path.link.source-" + d.data.key)
-			.classed("source", true)
-			.each(updateNodes("target", true));
+		var source = d.data.name,
+			targets = d.data.imports;
+			
+		targets.forEach(function(t) { updatePath(source, t, "red", "1", "2")});
+			
 	}
 	
 	function mouseout(d) {
-	
-		console.log(d);
+				
+		var source = d.data.name,
+			targets = d.data.imports;
+			selected = d.selected;
+			
+		if (!selected) {
+			targets.forEach(function(t) { updatePath(source, t, "steelblue", "0.5", "1")});
+		}
 		
-		svg.selectAll("path.link.source-" + d.data.key)
-			.classed("source", false)
-			.each(updateNodes("target", false));
-
-		svg.selectAll("path.link.target-" + d.data.key)
-			.classed("target", false)
-			.each(updateNodes("source", false));
-	}
-	
-	function updateNodes(name, value) {
-		console.log(value);
-		return function(d) {
-			if (value) this.parentNode.appendChild(this);
-			svg.select("#node-" + d[name].key).classed(name, value);
-		};
 	}
 	
 	function cross(a, b) {

@@ -24,6 +24,7 @@
 		innerRadius = radius - 120,
 		m0,
 		pi = Math.PI;
+		selectedNode = {};
 	
 	var cluster = d3.cluster()
 		.size([360, innerRadius]);
@@ -42,7 +43,7 @@
 	var link = svg.append("g").selectAll(".link"),
 		node = svg.append("g").selectAll(".node");
 		
-	d3.json("flare.json", function(error, classes) {
+	d3.json("data_cat1.json", function(error, classes) {
 		if (error) throw error;
 		
 		var root = packageHierarchy(classes)
@@ -60,7 +61,7 @@
 			})
 			.attr("style","stroke : steelblue; stroke-opacity: 0.5; stroke-width: 2px;")
 			.attr("class", "link")
-			.attr("id", function(d) { console.log(d); return "source-" + d.source.data.name + " target-" + d.target.data.name;})
+			.attr("id", function(d) { return "source-" + d.source.data.name + " target-" + d.target.data.name;})
 			.attr("d", line);
 			
 		console.log("test");
@@ -69,14 +70,17 @@
 		node = node
 			.data(root.leaves())
 			.enter().append("text")
+			.each(function(d) {console.log(window.location); d.selected = false; d.link = d.data.link;})
 			.attr("class", "node")
 			.attr("dy", "0.31em")
+			.attr("cursor","pointer")
 			.attr("id", function(d) { return "node-" + d.key; })
 			.attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + (d.y + 8) + ",0)" + (d.x < 180 ? "" : "rotate(180)"); })
 			.attr("text-anchor", function(d) { return d.x < 180 ? "start" : "end"; })
 			.text(function(d) { return d.data.key; })
 			.on("mouseover", mouseover)
-			.on("mouseout", mouseout);
+			.on("mouseout", mouseout)
+			.on("click", mouseclick);
 	});
 	
 	// Lazily construct the package hierarchy from class names.
@@ -127,42 +131,59 @@
 		return [e.pageX - radius, e.pageY - radius];
 	}
 	
+	function mouseclick(d) {
+		var source = d.data.name,
+			targets = d.data.imports,
+			selected = d.selected;
+			
+		
+		if (selectedNode != d) {
+			if (Object.keys(selectedNode).length !== 0) {				
+				selectedNode.selected = false;
+				mouseout(selectedNode);
+			}			
+			selectedNode = d;
+		}
+			
+		if (selected) {			
+			d.selected = false;
+			mouseout(d);
+		} else {
+			d.selected = true;
+			mouseover(d);			
+		}
+		
+	
+	}
+	
+	function updatePath(source, target, color, opacity, width) {
+		document.getElementById("source-" + source + " target-" + target).style.stroke = color;
+		document.getElementById("source-" + source + " target-" + target).style["stroke-opacity"] = opacity; 
+		document.getElementById("source-" + source + " target-" + target).style["stroke-width"] = width + "px";
+		document.getElementById("source-" + target + " target-" + source).style.stroke = color;
+		document.getElementById("source-" + target + " target-" + source).style["stroke-opacity"] = opacity; 
+		document.getElementById("source-" + target + " target-" + source).style["stroke-width"] = width + "px";
+	}
+	
+	
 	function mouseover(d) {
 		var source = d.data.name,
 			targets = d.data.imports;
 			
-		targets.forEach(function(t) {
-				
-				document.getElementById("source-" + source + " target-" + t).style.stroke = "red";
-				document.getElementById("source-" + source + " target-" + t).style["stroke-opacity"] = "1"; 
-				document.getElementById("source-" + source + " target-" + t).style["stroke-width"] = "2px";
-//document.getElementById("source-" + t + " target-" + source).style.stroke = "red";
-				//document.getElementById("source-" + t + " target-" + source).style["stroke-opacity"] = "1"; 
-				//document.getElementById("source-" + t + " target-" + source).style["stroke-width"] = "2px";
-				console.log(document.getElementById("source-" + source + " target-" + t));
-			}
-			);
+		targets.forEach(function(t) { updatePath(source, t, "red", "1", "2")});
 			
-		console.log("test");
 	}
 	
 	function mouseout(d) {
-			
+				
 		var source = d.data.name,
 			targets = d.data.imports;
+			selected = d.selected;
 			
-		targets.forEach(function(t) {
-				
-				document.getElementById("source-" + source + " target-" + t).style.stroke = "steelblue";
-				document.getElementById("source-" + source + " target-" + t).style["stroke-opacity"] = "0.5"; 
-				document.getElementById("source-" + source + " target-" + t).style["stroke-width"] = "1px";
-				//document.getElementById("source-" + t + " target-" + source).style.stroke = "steelblue";
-				//document.getElementById("source-" + t + " target-" + source).style["stroke-opacity"] = "0.5"; 
-				//document.getElementById("source-" + t + " target-" + source).style["stroke-width"] = "1px";
-			}
-			);
-			
-		console.log("test");
+		if (!selected) {
+			targets.forEach(function(t) { updatePath(source, t, "steelblue", "0.5", "1")});
+		}
+		
 	}
 	
 	function cross(a, b) {
