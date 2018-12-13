@@ -1,38 +1,48 @@
-module Clone2
+module CloneDetection
+
 import lang::java::m3::Core;
 import lang::java::m3::AST;
-import lang::java::jdt::m3::Core;
 import lang::java::jdt::m3::Core;
 import lang::java::jdt::m3::AST;
 import util::Math;
 import IO;
 import List;
 import String;
-import demo::common::Crawl;
 import Node;
+import JSONFormatter;
+import SubClassFiltering;
+import FileReader;
+import CloneStats;
 
-alias subTreeMap = map[str, list[loc]];
+alias subTreeMap 	= map[node, list[loc]];
+alias cloneClass 	= tuple[node, list[loc]];
 
-//public loc projectLoc = |project://smallsql0.21_src|;
-public loc projectLoc = |project://test_project|;
+public loc projectLoc = |project://smallsql0.21_src|;
+//public loc projectLoc = |project://test_project|;
 
 //http://leodemoura.github.io/files/ICSM98.pdf
-public int massThreshold = 7;
-
-
-// Get all java files from a project location.
-public list[loc] findJavaFiles(loc l) {
-	return crawl(l, ".java");
-}
+public int massThreshold 	= 20;
+public int cloneType 		= 1;
 
 public list[Declaration] getRenamedFileASTs(loc projectLoc) {
 	
-	allProjectFiles = findJavaFiles(projectLoc);
-	list[Declaration] fileASTs = [];
+	allProjectFiles 			= findJavaFiles(projectLoc);
+	list[Declaration] fileASTs 	= [];
 	
 	for (file <- allProjectFiles) {
 		AST			= renameDecls(file);
 		fileASTs 	+= AST;
+	}
+	return fileASTs;
+}
+
+public list[Declaration] getFileASTs(loc projectLoc) {
+
+	allProjectFiles 			= findJavaFiles(projectLoc);
+	list[Declaration] fileASTs 	= [];
+	
+	for (file <- allProjectFiles) {
+		fileASTs += createAstFromFile(file, true);;
 	}
 	return fileASTs;
 }
@@ -50,57 +60,28 @@ public loc getNodeLoc(node n) {
 	return projectLoc;
 }
 
+public list[cloneClass] getCloneClasses(subTreeMap st, bool filtered) {
 
-
-public tuple[list[str], list[loc]] getCloneClasses(subTreeMap st) {
-	for (clone <- st) {
-		//if (size(st[clone]) > 1) {			
-			return <[clone], st[clone]>;
-		//}
-	}
-	return <[], []>;
-}
-
-
-
-public str cleanMetaData(node n) {
-
-	str nodeKey = "";
+	cloneClasses = [];
 	
-	visit(n) {
-		case Declaration d:{
-			dnew = d;
-			dnew.src = |unknown:///|;
-			dnew.typ = class(|unknown:///|,[]);
-			dnew.decl = |unknown:///|;
-			nodeKey += toString(dnew);
-			println("");
-			println(dnew);
-		}
-		case Expression e:{
-			enew = e;
-			enew.src = |unknown:///|;
-			enew.typ = class(|unknown:///|,[]);
-			nodeKey += toString(enew);
-			println("");
-			println(enew);
-		}
-		case Statement s:{
-			snew = s;
-			snew.src = |unknown:///|;
-			nodeKey += toString(snew);
-			println("");
-			println(snew);
-		}
+	for (clone <- st) {
+		if (filtered) {
+			cleanCloneList = dup(st[clone]);
+			if (cleanCloneList != [|project://smallsql0.21_src|]) {
+				cloneClasses += <clone, cleanCloneList>;
+			}			
+		} else if (size(st[clone]) > 1 ) {			
+			cloneClasses += <clone, st[clone]>;
+		}		
 	}
-	return nodeKey;
-
+	return cloneClasses;
 }
 
-public map[str, list[loc]] addSubTreeToRes(node n, map[str, list[loc]] results) {
+public subTreeMap addSubTreeToRes(node n, subTreeMap results) {
 
 	nodeLoc = getNodeLoc(n);
-	cleanNode = cleanMetaData(n);
+	cleanNode = unsetRec(n);
+	
 	if (nodeLoc != |unknown:///|) {
 		if(cleanNode in results) {
 			results[cleanNode] += nodeLoc;
@@ -111,61 +92,48 @@ public map[str, list[loc]] addSubTreeToRes(node n, map[str, list[loc]] results) 
 	return results;
 }
 
-public tuple[list[str], list[loc]] getSingleNode() {
-	renamedASTs = getRenamedFileASTs(projectLoc);
+public list[cloneClass] findCloneClasses(loc projectLoc, int cloneType) {
+
+	ASTs = [];
+	
+	if (cloneType == 2) {
+		ASTs = getRenamedFileASTs(projectLoc);
+	} else if (cloneType == 1) {
+		ASTs = getFileASTs(projectLoc);
+	}
+	
 	subTreeMap results = ();
-	sq = false;
-	for (fileAST <- renamedASTs) {
+
+	for (fileAST <- ASTs) {
 	
 		visit(fileAST) {
 			case node n:{
 				loc l = projectLoc;
-				if (calcNodeMass(n) >= 10) {
+				if (calcNodeMass(n) >= massThreshold) {
 					results = addSubTreeToRes(n, results);
 				}	
 			}		
 		}
 	}
-	aSingleClone = getCloneClasses(results);
 	
-	return aSingleClone;
-}
-public tuple[list[str], list[loc]] getASingleClone() {
+	filteredResults = filterSubClones(getCloneClasses(results, false));
+	filteredCloneClasses = getCloneClasses(filteredResults, true);
 	
-	renamedASTs = getRenamedFileASTs(projectLoc);
-	
-	subTreeMap results = ();
-	
-	for (fileAST <- renamedASTs) {
-		visit(fileAST) {
-			case node n: {
-				if (calcNodeMass(n) == 10) {
-					l = projectLoc;
-					println(n);
-					switch (n) {
-						case Declaration d:
-							l = d.src;
-						case Expression e:
-							l = e.src;
-						case Statement s:
-							l = s.src;
-					}
-					if(n in results) {
-						results[n] += l;
-					} else {
-						results[n] = [l];
-					}
-				}	
-			}		
-		}
-	}
-	
-	aSingleClone = getCloneClasses(results);
-	
-	return aSingleClone;
+	return filteredCloneClasses;
 }
 
-//TODO: generate all clone pairs and classes and output them in a textual way.
+public void main() {
+
+	cloneClasses = findCloneClasses(projectLoc, cloneType);
+	
+	createCloneClassJSON(cloneClasses, cloneType);
+	
+	clonePercentage = getClonePercentage(cloneClasses, projectLoc);
+	
+	println("Percentage clones of type <cloneType> with a threshold of <massThreshold>: <clonePercentage> %");
+	
+	return;
+}
 
 // To avoid comparison of small trees and reduce the search space monumentally calculate a mass.
 // The mass is the amount of subnodes of a node.
@@ -199,9 +167,9 @@ public Declaration renameDecls(loc fileLoc){
 		case \methodCall(x, _, z) 			=> \methodCall(x, "methodCall", z)
 		case \methodCall(x, y, _, z) 		=> \methodCall(x, y, "methodCall", z) 
 		case \simpleName(_) 				=> \simpleName("simpleName")
-		case \stringLiteral(_)				=> \stringLiteral("string")
-		case \characterLiteral(_)			=> \characterLiteral("s")
-		case \booleanLiteral(_)				=> \booleanLiteral(true)
+		case \stringLiteral(_)				=> \number("0")
+		case \characterLiteral(_)			=> \number("0")
+		case \booleanLiteral(_)				=> \number("0")
 		case \number(_) 					=> \number("0")
 		case \variable(x,y) 				=> \variable("variableName",y) 
 		case \variable(x,y,z)				=> \variable("variableName",y,z) 	

@@ -17,6 +17,7 @@ import CloneStats;
 alias subTreeMap 	= map[node, list[loc]];
 alias cloneClass 	= tuple[node, list[loc]];
 
+//public loc projectLoc = |project://hsqldb-2.3.1|;
 public loc projectLoc = |project://smallsql0.21_src|;
 //public loc projectLoc = |project://test_project|;
 
@@ -158,7 +159,7 @@ public Declaration renameDecls(loc fileLoc){
 		case \vararg(x, _) 					=> \vararg(x, "varArgName") 
 		case \annotationTypeMember(x, _)	=> \annotationTypeMember(x, "annonName")
 		case \annotationTypeMember(x, _, y) => \annotationTypeMember(x, "annonName", y)
-		case \typeParameter(_, x) 			=> \typeParameter("typeParaName", x)
+		case \typeParameter(_, list[Type] x)=> \typeParameter("typeParaName", x)
 		case \constructor(_, x, y, z) 		=> \constructor("constructorName", x, y, z)
 		case \interface(_, x, y, z) 		=> \interface("interfaceName", x, y, z)
 		case \class(_, x, y, z) 			=> \class("className", x, y, z)

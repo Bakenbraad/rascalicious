@@ -9,14 +9,16 @@ alias cloneClass = tuple[node, list[loc]];
 
 public void addVisualisationToProject(loc projectLoc) {
 
-	clonesCat1 = findCloneClasses(projectLoc, 1);
-	clonesCat2 = findCloneClasses(projectLoc, 2);
+	cloneClasses1 = findCloneClasses(projectLoc, 1);
+	cloneClasses2 = findCloneClasses(projectLoc, 2);
 	
-	<clonesPerFile1, originalFileNames1> = createFileRelations(clonesCat1, 1, projectLoc);
-	<clonesPerFile2, originalFileNames2> = createFileRelations(clonesCat2, 2, projectLoc);
+	<clonesPerFile1, originalFileNames1> = createFileRelations(cloneClasses1, projectLoc);
+	<clonesPerFile2, originalFileNames2> = createFileRelations(cloneClasses2, projectLoc);
 	
-	jsonToFile(clonesPerFileToJSON(clonesPerFile1, originalFileNames1),1);
-	jsonToFile(clonesPerFileToJSON(clonesPerFile2, originalFileNames2),2);	
+	jsonToFile(clonesPerFileToJSON(clonesPerFile1, originalFileNames1),"fileRelations_cat1");
+	jsonToFile(clonesPerFileToJSON(clonesPerFile2, originalFileNames2),"fileRelations_cat2");	
+	createFileNameToNodesJSON(cloneClasses1, projectLoc);
+	createNodeToLocsJSON(cloneClasses1, projectLoc);
 
 	visualisationHTML = readFile(|project://series2/visualisation/visualisation.html|);
 	writeFile(toLocation(projectLoc.uri + "/visualisation.html"), visualisationHTML);

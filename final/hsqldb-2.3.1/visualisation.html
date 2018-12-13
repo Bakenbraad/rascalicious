@@ -19,59 +19,13 @@
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
 
-	var diameter 		= 1200,
-		radius 			= diameter / 2,
-		innerRadius 	= radius - 120,
+	var diameter = 960,
+		radius = diameter / 2,
+		innerRadius = radius - 120,
 		m0,
-		pi 				= Math.PI;
-		selectedNode 	= {},
-		filenameToNodes = {},
-		nodesToLocations= {},
-		nodeToLocs		= {};
-		
-
-	d3.json("fileNameToNodes.json", function(error, classes) {
-		if (error) throw error;
-		
-		filenameToNodes = getFilenameToNodes(classes);
-			
-				
-		}
-	);
-
-
-	function getFilenameToNodes(classes) {
-		var map 			= {},
-			filenameLength 	= classes.fileNameToNodes.length;
-		for(i=0;i<filenameLength;i++){
-			var obj = classes.fileNameToNodes[i];
-				map[obj.filename] = obj.nodes;
-			}
-		return map;
-		}
-
+		pi = Math.PI;
+		selectedNode = {};
 	
-	d3.json("nodeToLocs.json", function(error, classes) {
-		if (error) throw error;
-		
-		nodesToLocations = getNodeToLocs(classes);
-			
-				
-		}
-	);
-
-
-	function getNodeToLocs(classes) {
-		var map 			= {},
-			filenameLength 	= classes.nodeToLocsJSON.length;
-		for(i=0;i<filenameLength;i++){
-			var obj = classes.nodeToLocsJSON[i];
-				map[obj.node] = obj.loc;
-			}
-		return map;
-	}
-
-		
 	var cluster = d3.cluster()
 		.size([360, innerRadius]);
 		
@@ -89,7 +43,7 @@
 	var link = svg.append("g").selectAll(".link"),
 		node = svg.append("g").selectAll(".node");
 		
-	d3.json("fileRelations_cat1.json", function(error, classes) {
+	d3.json("data_cat1.json", function(error, classes) {
 		if (error) throw error;
 		
 		var root = packageHierarchy(classes)
@@ -105,18 +59,18 @@
 				d.source = d[0];
 				d.target = d[d.length-1];
 			})
-			.attr("style","stroke : steelblue; stroke-opacity: 0.5; stroke-width: 0.5px;")
+			.attr("style","stroke : steelblue; stroke-opacity: 0.5; stroke-width: 2px;")
 			.attr("class", "link")
-			.attr("id", function(d) { return "source-" + d.source.data.filename + " target-" + d.target.data.filename;})
+			.attr("id", function(d) { return "source-" + d.source.data.name + " target-" + d.target.data.name;})
 			.attr("d", line);
 			
-		
+		console.log("test");
 		
 		
 		node = node
 			.data(root.leaves())
 			.enter().append("text")
-			.each(function(d) { d.selected = false;})
+			.each(function(d) {console.log(window.location); d.selected = false; d.link = d.data.link;})
 			.attr("class", "node")
 			.attr("dy", "0.31em")
 			.attr("cursor","pointer")
@@ -132,21 +86,21 @@
 	// Lazily construct the package hierarchy from class names.
 	function packageHierarchy(classes) {
 		var map = {};
-		function find(filename, data) {
-			var node = map[filename], i;
+		function find(name, data) {
+			var node = map[name], i;
 			if (!node) {
-				node = map[filename] = data || {filename: filename, children: []};
-				if (filename.length) {
-					node.parent = find(filename.substring(0, i = filename.lastIndexOf(".")));
+				node = map[name] = data || {name: name, children: []};
+				if (name.length) {
+					node.parent = find(name.substring(0, i = name.lastIndexOf(".")));
 					node.parent.children.push(node);
-					node.key = filename.substring(i + 1);
+					node.key = name.substring(i + 1);
 				}
 			}
 			return node;
 		}
 	
 		classes.forEach(function(d) {
-			find(d.filename, d);
+			find(d.name, d);
 		});
 		
 		return d3.hierarchy(map[""]);
@@ -156,21 +110,21 @@
 	function packageImports(nodes) {
 	
 		var map = {},
-		locs = [];
+		imports = [];
 		
 		// Compute a map from name to node.
 		nodes.forEach(function(d) {
-			map[d.data.filename] = d;
+			map[d.data.name] = d;
 		});
 		
 		// For each import, construct a link from the source to target node.
 		nodes.forEach(function(d) {
-			if (d.data.locs) d.data.locs.forEach(function(i) {
-				locs.push(map[d.data.filename].path(map[i]));
+			if (d.data.imports) d.data.imports.forEach(function(i) {
+				imports.push(map[d.data.name].path(map[i]));
 			});
 		});
 	
-		return locs;
+		return imports;
 	}	
 	
 	function mouse(e) {
@@ -178,8 +132,8 @@
 	}
 	
 	function mouseclick(d) {
-		var source = d.data.filename,
-			targets = d.data.locs,
+		var source = d.data.name,
+			targets = d.data.imports,
 			selected = d.selected;
 			
 		
@@ -213,21 +167,21 @@
 	
 	
 	function mouseover(d) {
-		var source = d.data.filename,
-			targets = d.data.locs;
+		var source = d.data.name,
+			targets = d.data.imports;
 			
-		targets.forEach(function(t) { updatePath(source, t, "red", "1", "1.5")});
+		targets.forEach(function(t) { updatePath(source, t, "red", "1", "2")});
 			
 	}
 	
 	function mouseout(d) {
 				
-		var source = d.data.filename,
-			targets = d.data.locs;
+		var source = d.data.name,
+			targets = d.data.imports;
 			selected = d.selected;
 			
 		if (!selected) {
-			targets.forEach(function(t) { updatePath(source, t, "steelblue", "0.5", "0.5")});
+			targets.forEach(function(t) { updatePath(source, t, "steelblue", "0.5", "1")});
 		}
 		
 	}
