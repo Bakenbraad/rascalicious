@@ -34,10 +34,10 @@ public void createFileNameToNodesJSON(list[cloneClass] cloneClasses, loc project
 	
 	for (fn <- fileNameToNodes) {		
 		if (first) {
-			JSONMap += "{\"<fn>\":<locListToString(fileNameToNodes[fn])>}";
+			JSONMap += "{\"filename\" : \"<fn>\", \"nodes\" : <locListToString(fileNameToNodes[fn])>}";
 			first = false;
 		} else {
-			JSONMap += ",{\"<fn>\":<locListToString(fileNameToNodes[fn])>}";
+			JSONMap += ", {\"filename\" : \"<fn>\", \"nodes\" : <locListToString(fileNameToNodes[fn])>}";
 		}
 	} 
 	JSONMap += "] }";
@@ -56,10 +56,10 @@ public str formatJSONMap(list[cloneClass] cloneClasses, str mapName, loc project
 		stringifiedLocs = locListToString(locsToJSONUris(cC[1], projectLoc));
 		
 		if (first) {
-			JSONMap += "{\"<escape(toString(cC[0]),invalidJSON)>\":<stringifiedLocs>}";
+			JSONMap += "{\"node\" : \"<escape(toString(cC[0]),invalidJSON)>\",\"locs\" :<stringifiedLocs>}";
 			first = false;
 		} else {
-			JSONMap += ",{\"<escape(toString(cC[0]),invalidJSON)>\":<stringifiedLocs>}";
+			JSONMap += ", {\"node\" : \"<escape(toString(cC[0]),invalidJSON)>\",\"locs\" : <stringifiedLocs>}";
 		}
 	} 
 	JSONMap += "] }";
