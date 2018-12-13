@@ -53,7 +53,7 @@ public str formatJSONMap(list[cloneClass] cloneClasses, str mapName, loc project
 	
 	for (cC <- cloneClasses) {	
 	
-		stringifiedLocs = locListToString(locsToJSONUris(cC[1], projectLoc));
+		stringifiedLocs = locsToURLs(cC[1], projectLoc);
 		
 		if (first) {
 			JSONMap += "{\"node\" : \"<escape(toString(cC[0]),invalidJSON)>\",\"locs\" :<stringifiedLocs>}";
@@ -110,6 +110,17 @@ public list[str] locsToJSONUris(list[loc] locList, loc projectLoc) {
 	
 	for (l <- locList) {
 		outputList += filterToDataFormat(l.uri, projectLoc);
+	}
+	
+	return outputList;
+}
+
+public list[str] locsToURLs(list[loc] locList, loc projectLoc) {
+
+	outputList = [];
+	
+	for (l <- locList) {
+		outputList += l.uri[(size(projectLoc.uri))..];
 	}
 	
 	return outputList;

@@ -22,15 +22,9 @@
 }
 
 .cloneinfo {
-	border: solid 2px black;
-	position: fixed;
+	position: absolute;
 	right: 0px;
-	top: 0px;
-	width: 20%;
-	height: 75%;
-	overflow-y: scroll;
-	padding: 50px;
-	margin: 30px;
+	width: 19%;
 }
 
 .collapsible {
@@ -43,7 +37,7 @@
   width: 100%;
   text-align: center;
   outline: none;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .active, .collapsible:hover {
@@ -51,27 +45,15 @@
 }
 
 .content {
-  padding: 13px;
+  padding: 0 18px;
   display: none;
   overflow: hidden;
   background-color: #f1f1f1;
 }
 
-.urllink {
-	width: 100%;
-	right: 0px;
-	color: black;
-	font: 20px sans-serif;
-	text-decoration: none;
-}
-
-.urllink:hover {
-	color: blue;
-}
-
 </style>
 <body>
-<div id="clonevis" class="clonevisualisation">	
+<div id="clonevis" class="clonevisualisation">
 </div>
 <div id="cloneList" class="cloneinfo">
 </div>
@@ -86,8 +68,7 @@
 		selectedNode 	= {},
 		filenameToNodes = {},
 		nodesToLocations= {},
-		nodeToLocs		= {},
-		windowloc 		= window.location.href.split("/").slice(0, -1).join('/');
+		nodeToLocs		= {};
 	
 	/*
 		Functions for creating lists of clone class visualisations.
@@ -105,12 +86,12 @@
 			// Create a button with clone number.
 			collapsible = document.createElement('button')
 			collapsible.className = "collapsible";
-			collapsible.innerHTML = "Clone number " + String((i + 1)) + " occurs in " + String(uniq(array[i]).length) + " file(s)";
+			collapsible.innerHTML = "Clone number" + String((i + 1)) + " occurs in " + String(uniq(array[i]).length) + " file(s)";
 			 
 			// Content below button is the corresponding occurrance locations.
 			content = document.createElement('div');
 			content.className = "content";
-			content.appendChild(makeOccurranceList(array[i]));	
+			content.appendChild(makeUL(array[i]));	
 			
 			// Append the new elements in order to the div.
 			div.appendChild(collapsible);
@@ -121,27 +102,27 @@
 	}
 	
 	// Source: https://stackoverflow.com/questions/9229645/remove-duplicate-values-from-js-array
-	// This is just a dup function for js arrays.
+	// This is just a dup function for js.
 	function uniq(a) {
 		return a.sort().filter(function(item, pos, ary) {
 			return !pos || item != ary[pos - 1];
 		})
 	}
 	
-	function makeOccurranceList(array) {
+	function makeUL(array) {
     // Create the list element:
 		var list = document.createElement('div');
 			arraysize = array.length;
-		
+
 		for (var i = 0; i < arraysize; i++) {
+			// Create the list item:
+			var item = document.createElement('div');
+
 			// Set its contents:
-			var urllink = document.createElement('a');
-			urllink.className = "urllink";
-			
-			urllink.href =  windowloc + array[i];
-			urllink.innerHTML = array[i].split("/").pop();
-			list.appendChild(urllink);
-			list.appendChild(document.createElement('br'));
+			item.appendChild(document.createTextNode(array[i]));
+
+			// Add it to the list:
+			list.appendChild(item);
 		}
 		// Finally, return the constructed list:
 		return list;
@@ -374,7 +355,7 @@
 			if (selectedNode.data === undefined || selectedNode.data.filename !== t) {
 				updatePath(source, t, "red", "1", "1.5", "black"); 
 			}			
-			updatePath(t, source, "red", "1", "1.5", "green");
+			updatePath(t, source, "red", "1", "1.5", "maroon");
 		});
 			
 	}
