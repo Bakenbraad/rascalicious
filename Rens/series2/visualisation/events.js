@@ -59,12 +59,12 @@ function mouseout(d) {
         targets.forEach(function(t) { 
             if(selectedNode.data !== undefined) {
                 if(selectedNode == d || !(selectedNode.data.locs.indexOf(source) !== -1 && selectedNode.data.filename === t )) {
-                    updatePath(source, t, "blue", "0.5", "0.5", "black");
-                    updatePath(t, source, "blue", "0.5", "0.5", "black");
+                    updatePath(source, t, "blue", "0.5", "0.5", getTextColor(d));
+                    updatePath(t, source, "blue", "0.5", "0.5", getTextColor(d));
                 }
             } else {
-                updatePath(source, t, "blue", "0.5", "0.5", "black");
-                updatePath(t, source, "blue", "0.5", "0.5", "black");
+                updatePath(source, t, "blue", "0.5", "0.5", getTextColor(d));
+                updatePath(t, source, "blue", "0.5", "0.5", getTextColor(d));
             }
         });
     }		

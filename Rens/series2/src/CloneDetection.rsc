@@ -30,7 +30,7 @@ public list[cloneClass] filterSmallCloneClasses(list[cloneClass] cloneClasses) {
 	
 	for (cC <- cloneClasses) {
 		locs = cC[1];
-		if (calcFunctionalLines(countLines(locs[0])) >= 6) {
+		if (calcFunctionalLines(countLines(locs[0])) >= 4) {
 			outputList += cC;
 		}
 	}
