@@ -97,17 +97,19 @@ public tuple[map[str, list[str]], map[str,str]] createFileRelations(list[cloneCl
 	
 	map[str, list[str]] clonesPerFile = ();
 	map[str, str] originalFileNames = ();
+	list[loc] allLocs = findJavaFiles(projectLoc);
+	
+	for(l <- allLocs) {
+		fileName = filterToDataFormat(l.uri, projectLoc);
+		clonesPerFile[fileName] = [];
+	}
 	
 	for (cC <- cloneClasses) {
 		cCLocs = cC[1];
 		for (i <- [0.. size(cCLocs)]) {
 			fileName = filterToDataFormat(cCLocs[i].uri, projectLoc);
 			originalFileNames[fileName] = cCLocs[i].uri;
-			if (fileName in clonesPerFile) {
-				clonesPerFile[fileName] += locsToJSONUris(cCLocs - cCLocs[i], projectLoc);
-			} else {
-				clonesPerFile[fileName] = locsToJSONUris(cCLocs - cCLocs[i], projectLoc);				
-			}
+			clonesPerFile[fileName] += locsToJSONUris(cCLocs - cCLocs[i], projectLoc);
 			clonesPerFile[fileName] = dup(clonesPerFile[fileName]);
 		}		
 	}
