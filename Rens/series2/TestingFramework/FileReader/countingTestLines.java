@@ -1,28 +1,14 @@
 start
-/* Strange hybrid comment 
- */ // Another com
-// Hello this is a comment
-/*
- This 
- is 
- a 
- long 
- multiline 
- comment 
- */
+{
 int a = 1; //This is a hybrid line
-}
-/*
- This 
- is 
- a 
- long 
- multiline 
- comment 
- */
+} // Bracket with comment.
 /* This is a multiline 
  comment */
-}
-// Hello this is a comment
-a = 1 /* nested multiline */ + 2;
+str edgeC = "A string with a // comment" 
+} // Bracket with comment.
+/* This is a multiline 
+ comment */
+a = 1;
+} // Bracket with comment.
+a = 1;
 return

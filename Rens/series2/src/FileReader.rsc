@@ -88,10 +88,22 @@ public tuple[map[str,int], int] addFilteredLines(str line, map[str, int] results
 		} else {
 			results["comments"] += 1;
 		}
-	} else if (startsWith(trim(line), "}") || startsWith(trim(line), "{")) {
-		results["brackets"] += 1;
-	} else if (trim(line) == "") {
+	} else if (startsWith(trim(line), "{")) {
+		lineSplit = split("{", trim(line));
+		if (size(lineSplit) == 0) {
+			results["brackets"] += 1;
+		} else if (startsWith(trim(lineSplit[1]), "//")) {
+			results["brackets"] += 1;
+		}	
+	} else if (startsWith(trim(line), "}")){
+		lineSplit = split("}", trim(line));
+		if (size(lineSplit) == 0) {
+			results["brackets"] += 1;
+		} else if (startsWith(trim(lineSplit[1]), "//")) {
+			results["brackets"] += 1;
+		}
+	}else if (trim(line) == "") {
 		results["emptylines"] += 1;
-	}
+	} 
 	return <results, linesOfCom>;
 }

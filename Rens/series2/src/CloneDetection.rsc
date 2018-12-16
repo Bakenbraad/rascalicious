@@ -22,8 +22,20 @@ public loc projectLoc = |project://smallsql0.21_src|;
 //public loc projectLoc = |project://test_project|;
 
 //http://leodemoura.github.io/files/ICSM98.pdf
-public int massThreshold 	= 20;
+public int massThreshold 	= 18;
 public int cloneType 		= 1;
+
+public list[cloneClass] filterSmallCloneClasses(list[cloneClass] cloneClasses) {
+	outputList = [];
+	
+	for (cC <- cloneClasses) {
+		locs = cC[1];
+		if (calcFunctionalLines(countLines(locs[0])) >= 6) {
+			outputList += cC;
+		}
+	}
+	return outputList;
+}
 
 public list[Declaration] getRenamedFileASTs(loc projectLoc) {
 	
@@ -119,19 +131,18 @@ public list[cloneClass] findCloneClasses(loc projectLoc, int cloneType) {
 	
 	filteredResults = filterSubClones(getCloneClasses(results, false));
 	filteredCloneClasses = getCloneClasses(filteredResults, true);
+	filteredLargeCloneClasses = filterSmallCloneClasses(filteredCloneClasses);
 	
-	return filteredCloneClasses;
+	return filteredLargeCloneClasses;
 }
 
 public void main() {
 
 	cloneClasses = findCloneClasses(projectLoc, cloneType);
-	
-	createCloneClassJSON(cloneClasses, cloneType);
-	
+		
 	clonePercentage = getClonePercentage(cloneClasses, projectLoc);
 	
-	println("Percentage clones of type <cloneType> with a threshold of <massThreshold>: <clonePercentage> %");
+	println("Percentage clones of type <cloneType>: <clonePercentage> %");
 	
 	return;
 }

@@ -29,25 +29,16 @@
 		nodeToInfo		= {},
 		filenameToStats	= {},
 		locToNodeSize	= {},
-		windowloc 		= window.location.href.split("/").slice(0, -2).join('/'),
-		projectName		= window.location.href.split("/").slice(-3)[0].split("?")[0],
-		urlParam		= window.location.href.split("?"),
-		cloneCat		= "",
-		cloningPerc		= 0;
+		windowloc 		= window.location.href.split("/").slice(0, -1).join('/'),
+		projectName		= window.location.href.split("/").slice(-2)[0].split("?")[0];
+		urlParam		= window.location.href.split("?");	
+		cloneCat		= "";
 	if (urlParam.length === 1) {window.location.replace(window.location + "?cat=1")}		
 	else {cloneCat		= urlParam[1].split("=")[1]};
 	
-	d3.json("cloning_" + cloneCat + ".json", function(error, classes) {
-		if (error) throw error;
-
-		cloningPerc = parseFloat(classes[0]["percentage"]).toFixed(2)
-		
-		// Set the project title	
-		title = document.getElementsByTagName("h2")[0];
-		title.innerHTML = "Project: \"" + projectName + "\" Clone type: " + cloneCat + " (" + cloningPerc + "% cloned)";
-	});
-	
-	
+	// Set the project title	
+	title = document.getElementsByTagName("h2")[0];
+	title.innerHTML = "Project: " + projectName + " Clone type: " + cloneCat;
 	
 	d3.json("fileNameToNodes_" + cloneCat + ".json", function(error, classes) {
 		if (error) throw error;
@@ -343,7 +334,7 @@
 			case "1" : newCat = "2"; break;
 			case "2" : newCat = "1"; break;
 		}
-		window.location.href = windowloc + "/visualisation/visualisation.html?cat=" + newCat;
+		window.location.href = windowloc + "/visualisation.html?cat=" + newCat;
 	}
 	
 </script>
