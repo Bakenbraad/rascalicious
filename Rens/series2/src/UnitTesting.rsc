@@ -10,7 +10,6 @@ import SubClassFiltering;
 import CloneDetection;
 import CloneStats;
 
-
 alias randLine 					= tuple[int, str, str];
 
 public str lineName 			= "lines";
@@ -215,7 +214,7 @@ public void testLineCategorisation() {
 		generatedValues = volumeTestFileGenerator();
 		functionValues = countLines(fileReaderOutputLoc);
 		if (functionValues != generatedValues) {
-			printFailMsg("addFilteredLines", functionValues, generatedValues);
+			printFailMsg("addFilteredLines", toString(functionValues), toString(generatedValues));
 			return;
 		}		
 	}

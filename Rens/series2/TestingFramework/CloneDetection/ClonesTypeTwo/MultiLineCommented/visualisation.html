@@ -1,73 +1,83 @@
 <!DOCTYPE html>
 <meta charset="utf-8"/>
 <head>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
+<h2></h2>
 <button onclick="buttonChangeCat()" id="categoryButton">Change Category</button>
-<button onclick="buttonChangeFile()" id="categoryButton">Change Project</button>
 <div id="clonevis" style="z-index: -1">	
 </div>
 <div id="cloneList">
 </div>
 <script src="https://d3js.org/d3.v4.min.js"></script>
-<script src="events.js"></script> 
+<script src="./events.js"></script>
 <script>
-
-	var diameter 		= 900,
-		radius 			= diameter / 2,
-		innerRadius 	= radius - 120,
+	var diameter 		= 0,
+		radius 			= 0,
+		innerRadius 	= 0,
 		m0,
+		svg,
+		title,
+		link,
+		node,
+		cluster,
 		pi 				= Math.PI,
 		selectedNode 	= {},
 		filenameToNodes = {},
 		nodeToLocations	= {},
 		nodeToInfo		= {},
 		filenameToStats	= {},
+		locToNodeSize	= {},
 		windowloc 		= window.location.href.split("/").slice(0, -1).join('/'),
-		urlParams		= window.location.href.split("?"),
-		projectAndCat	= urlParams[1].split("&"),
-		project			= projectAndCat[0].split("=")[1]
-		cloneCat		= projectAndCat[1].split("=")[1];
+		projectName		= window.location.href.split("/").slice(-2)[0].split("?")[0];
+		urlParam		= window.location.href.split("?");	
+		cloneCat		= "";
+	if (urlParam.length === 1) {window.location.replace(window.location + "?cat=1")}		
+	else {cloneCat		= urlParam[1].split("=")[1]};
 	
+	// Set the project title	
+	title = document.getElementsByTagName("h2")[0];
+	title.innerHTML = "Project: " + projectName + " Clone type: " + cloneCat;
 	
-	
-	d3.json("fileNameToNodes_"+project+cloneCat+".json", function(error, classes) {
+	d3.json("fileNameToNodes_" + cloneCat + ".json", function(error, classes) {
 		if (error) throw error;
 		
 		filenameToNodes = getJSONObjs(classes,"fileNameToNodes", "filename", "nodes" );
 		filenameToStats = getJSONObjs(classes,"fileNameToNodes", "filename", "cloneinfo" );
 	});
 	
-	d3.json("nodeToLocs_"+project+cloneCat+".json", function(error, classes) {
+	d3.json("nodeToLocs_" + cloneCat + ".json", function(error, classes) {
 		if (error) throw error;
 		
 		nodeToLocations = getJSONObjs(classes,"nodeToLocsJSON", "node", "locs" );
 		nodeToInfo 		= getJSONObjs(classes,"nodeToLocsJSON", "node", "nodesize" );	
-	});
-	
-	
+	});		
 		
-	
-	var cluster = d3.cluster()
-		.size([360, innerRadius]);
-		
-	var line = d3.radialLine()
-		.curve(d3.curveBundle.beta(0.85))
-		.radius(function(d) { return d.y; })
-		.angle(function(d) { return d.x / 180 * Math.PI; });
-		
-	var svg = d3.select("#clonevis").append("svg")
-		.attr("width", diameter)
-		.attr("height", diameter)
-		.append("g")
-		.attr("transform", "translate(" + radius + "," + radius + ")")
-		
-	var link = svg.append("g").selectAll(".link"),
-		node = svg.append("g").selectAll(".node");
-		
-	d3.json("fileRelations_"+project+cloneCat+".json", function(error, classes) {
+	// Generate the radial dendogram of file relations
+	d3.json("fileRelations_" + cloneCat + ".json", function(error, classes) {
 		if (error) throw error;
+
+		diameter 		= 20 * classes.length + 700;
+		radius 			= diameter / 2;
+		innerRadius 	= radius - 200;
+		
+		cluster = d3.cluster()
+			.size([360, innerRadius]);
+		
+		line = d3.radialLine()
+			.curve(d3.curveBundle.beta(0.85))
+			.radius(function(d) { return d.y; })
+			.angle(function(d) { return d.x / 180 * Math.PI; });
+			
+		svg = d3.select("#clonevis").append("svg")
+			.attr("width", diameter)
+			.attr("height", diameter)
+			.append("g")
+			.attr("transform", "translate(" + radius + "," + radius + ")")
+			
+		link = svg.append("g").selectAll(".link"),
+		node = svg.append("g").selectAll(".node");
 		
 		var root = packageHierarchy(classes)
 			.sum(function(d) { return d.size; });
@@ -83,6 +93,7 @@
 			})
 			.attr("style","stroke : blue; stroke-opacity: 0.5; stroke-width: 0.5px;")
 			.attr("class", "link")
+			.attr("fill", "none")
 			.attr("id", function(d) { return "source-" + d.source.data.filename + " target-" + d.target.data.filename;})
 			.attr("d", line);
 
@@ -103,27 +114,67 @@
 			.on("click", mouseclick);
 	});
 
-	function makeCloneCollapsible(array) {
+	function dup(array) {
+		var output = [];
+		
+		for (j = 0; j < array.length; j++) {
+			if(output.indexOf(array[j]) === -1) {
+				output.push(array[j]);
+			}
+		}
+		outputObj = toObject(output);
+		outputObj.length = output.length;
+		return outputObj;
+	}	
 	
+	function toObject(arr) {
+		var rv = {};
+		for (var i = 0; i < arr.length; ++i)
+			rv[i] = arr[i];
+		return rv;
+	}
+	
+	function makeCloneCollapsible(array) {
+
+		array = dup(array);
+		
 		var div 		= document.createElement('div'),
 			arraysize 	= array.length,
 			collapsible,
-			content;
+			title,
+			content,
+			stats,
+			statInfo;			
+		
+		if(selectedNode.selected) {
+			// Set title
+			title = document.createElement('text')
+			title.innerHTML = "Clones in file: " + selectedNode.data.key ;
+			title.className = "clonetitle";
 			
+			// Set stats
+			statInfo = filenameToStats[selectedNode.data.filename];
+			stats = document.createElement("text");
+			stats.innerHTML = "LOFC in this file: " + statInfo[2] + ", cloned lines: " + statInfo[1] + " (" + parseFloat(statInfo[0]).toFixed(2) + "%)";
+			stats.className = "infotext";
 			
+			div.appendChild(title);
+			div.appendChild(document.createElement('br'));
+			div.appendChild(stats);
+		}
 		for (var i = 0; i < arraysize; i++) {
 		
 			// Create a button with clone number.
 			collapsible = document.createElement('button')
 			collapsible.className = "collapsible";
 			linkCount = getAddressCount(array[i])
-			
-			collapsible.innerHTML = "Clone number " + String((i + 1)) + " occurs in " + String(linkCount) + " file(s)";
+
+			collapsible.innerHTML = String((i + 1)) + ": Clone of " + locToNodeSize[array[i][0]] + " lines, occurs in " + String(linkCount) + " file(s)";
 			 
 			// Content below button is the corresponding occurrance locations.
 			content = document.createElement('div');
 			content.className = "content";
-			content.appendChild(makeOccurranceList(array[i]));	
+			content.appendChild(makeOccurranceList(array[i]));
 			
 			// Append the new elements in order to the div.
 			div.appendChild(collapsible);
@@ -151,7 +202,8 @@
     // Create the list element:
 		var list = document.createElement('div');
 			arraysize = array.length;
-		console.log(array);
+			
+		
 		for (var i = 0; i < arraysize; i++) {
 			// Set its contents:
 			var urllink = document.createElement('a');
@@ -159,8 +211,7 @@
 			
 			fileLocationWithOffsets = array[i].split("/").pop();
 			fileloc = array[i].split("|")[0];
-			urllink.href =  windowloc + "/" + fileloc;
-			
+			urllink.href =  windowloc + fileloc;			
 			
 			// get the offsets
 			offsetstart = fileLocationWithOffsets.split("|")[1];
@@ -184,7 +235,7 @@
 			coll[i].addEventListener("click", function() {
 				this.classList.toggle("active");
 				var content = this.nextElementSibling;
-				console.log(content);
+
 				if (content.style.display === "block") {
 					content.style.display = "none";
 				} else {
@@ -202,7 +253,12 @@
 		for ( i = 0; i < clonedNodes.length; i++) {
 			nodeString = clonedNodes[i];
 			cloneLocs = nodeToLocations[nodeString];
+			
 			clones[i] = cloneLocs;
+			for (j = 0; j < cloneLocs.length; j++) {
+				
+				locToNodeSize[cloneLocs[j]] = nodeToInfo[nodeString];
+			}			
 		}
 		clones.length = i;
 		return clones;
@@ -270,7 +326,16 @@
 		document.getElementById("node-" + target).style.fill = textcolor;
 	}
 
-	
+	function buttonChangeCat(){
+		
+		var newCat 	= "";
+		
+		switch (cloneCat){
+			case "1" : newCat = "2"; break;
+			case "2" : newCat = "1"; break;
+		}
+		window.location.href = windowloc + "/visualisation.html?cat=" + newCat;
+	}
 	
 </script>
 </body>
